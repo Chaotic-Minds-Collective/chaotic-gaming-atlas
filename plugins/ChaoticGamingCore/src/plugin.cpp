@@ -63,7 +63,7 @@ void logLifecycle(const char* eventName) noexcept {
         message,
         sizeof(message),
         "[%s] %s | pluginVersion=%s | serverBuild=%s | runtimeApi=%s | candidateApi=%s\n",
-        kPluginName, eventName, kPluginVersion, serverBuild, runtimeApiVersion, CG_ATLAS_API_VERSION
+        kPluginName, eventName, kAdapterVersion, serverBuild, runtimeApiVersion, CG_ATLAS_API_VERSION
     );
     logMessage(message);
 }
