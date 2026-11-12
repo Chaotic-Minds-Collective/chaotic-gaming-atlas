@@ -4,4 +4,9 @@ out/
 .vscode/
 *.user
 *.suo
+*.dll
+*.pdb
+*.obj
+*.lib
 *.log
+.env
