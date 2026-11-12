@@ -1,7 +1,7 @@
 {
   "FullName": "Chaotic Gaming Core",
-  "Description": "Minimal ATLAS plugin lifecycle proof of concept. Does not hook game behavior.",
-  "Version": "0.1.0",
+  "Description": "ATLAS lifecycle diagnostics and optional server-scoped Core heartbeat. Does not hook game behavior.",
+  "Version": "0.2.0",
   "MinApiVersion": 1.71,
   "Dependencies": []
 }
