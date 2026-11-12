@@ -176,7 +176,10 @@ bool sendCoreHeartbeat() {
         logMessage("[Chaotic Gaming Core] WinHTTP session could not be created.\n");
         return false;
     }
-    WinHttpSetTimeouts(session.value, 3000, 3000, 3000, 3000);
+    if (!WinHttpSetTimeouts(session.value, 3000, 3000, 3000, 3000)) {
+        logMessage("[Chaotic Gaming Core] WinHTTP timeouts could not be configured; heartbeat skipped.\n");
+        return false;
+    }
 
     WinHttpHandle connection(WinHttpConnect(session.value, host.c_str(), parts.nPort, 0));
     if (!connection.value) {
@@ -290,7 +293,10 @@ CG_EXPORT void CG_CALL Plugin_Init() noexcept {
 }
 
 CG_EXPORT void CG_CALL Plugin_Unload() noexcept {
-    g_stop.store(true);
+    {
+        std::lock_guard<std::mutex> lock(g_waitMutex);
+        g_stop.store(true);
+    }
     g_waitCondition.notify_all();
     if (g_heartbeatThread.joinable()) g_heartbeatThread.join();
     logLifecycle("Plugin_Unload");
