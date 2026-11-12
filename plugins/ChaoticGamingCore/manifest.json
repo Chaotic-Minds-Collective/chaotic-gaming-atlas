@@ -1,0 +1,24 @@
+{
+  "id": "com.chaoticminds.atlas.core",
+  "name": "Chaotic Gaming Core",
+  "version": "0.1.0",
+  "game": "atlas",
+  "apiVersion": "1",
+  "dependencies": [],
+  "capabilities": [
+    "server.lifecycle"
+  ],
+  "permissions": [
+    "servers.read"
+  ],
+  "compatibility": {
+    "gameBuilds": [],
+    "serverApi": [
+      "1.71"
+    ],
+    "operatingSystems": [
+      "windows"
+    ]
+  },
+  "configSchema": {}
+}

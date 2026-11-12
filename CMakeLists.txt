@@ -16,4 +16,6 @@ set_target_properties(ChaoticGamingCore PROPERTIES
   OUTPUT_NAME "ChaoticGamingCore"
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/plugins/ChaoticGamingCore"
   LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/plugins/ChaoticGamingCore"
+  RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/plugins/ChaoticGamingCore"
+  LIBRARY_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/plugins/ChaoticGamingCore"
 )

@@ -8,11 +8,18 @@ The first native DLL intentionally does only two things:
 
 It writes lifecycle messages to the Windows debugger output. It does not call game APIs, register console commands, access player data, open sockets, or modify server state.
 
+## Two manifests
+
+- `PluginInfo.json` is the loader-facing manifest for the candidate AtlasApi plugin loader.
+- `manifest.json` is the Chaotic Gaming Core plugin-registry manifest.
+
+They serve different systems and must not be substituted for one another. The Core manifest is valid against the existing registry contract; its compatibility fields are metadata, not proof of a tested build.
+
 ## Evidence and compatibility boundary
 
 The ATLAS Server API 1.71 resource describes a C++ server-side plugin loader and documents the Windows server installation location. The underlying ARK Server API plugin manager source shows the common `Plugin_Init` / `Plugin_Unload` export convention. This is a strong implementation lead, not proof that the ATLAS 1.71 binary uses an identical ABI.
 
-Before any gameplay feature is added, validate against the exact ATLAS dedicated-server build and installed AtlasApi 1.71 binary in an isolated disposable server. Confirm:
+Before any gameplay feature is added, validate against the exact ATLAS dedicated-server build and installed AtlasApi 1.71 binary in an isolated test environment. Confirm:
 1. The loader reads the supplied `PluginInfo.json` keys and version value.
 2. The loader accepts the exported calling convention and resolves both symbols.
 3. The DLL loads and unloads without a crash.
