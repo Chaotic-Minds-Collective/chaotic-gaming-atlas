@@ -1,6 +1,12 @@
-node_modules/
-.env
-.env.*
-!.env.example
+build/
+out/
+.vs/
+.vscode/
+*.user
+*.suo
+*.dll
+*.pdb
+*.obj
+*.lib
 *.log
-coverage/
+.env
