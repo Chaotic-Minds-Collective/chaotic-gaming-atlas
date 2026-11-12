@@ -24,3 +24,5 @@ jobs:
         run: cmake --preset windows-x64-release
       - name: Build
         run: cmake --build --preset windows-x64-release
+      - name: Run portable contract tests
+        run: ctest --test-dir build/windows-x64-release -C Release --output-on-failure
