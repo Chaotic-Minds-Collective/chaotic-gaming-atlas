@@ -1,55 +1,27 @@
-# Chaotic Gaming — ATLAS Plugins
+# Chaotic Gaming ATLAS Adapter
 
-Original, modular server-side plugins for the Chaotic Gaming ATLAS network.
+A standalone heartbeat agent for the ATLAS dedicated server. It queries the server with GameDig and reports status to the Chaotic Gaming Core.
 
-## Goals
+## Included
+- Game-specific GameDig query type: `atlas`.
+- Server-scoped authenticated heartbeat to Core.
+- Skips a heartbeat when the game query fails instead of falsely reporting the server offline.
+- Runs independently from the Discord bot and website.
 
-- Replace useful third-party mod functionality with independently maintained implementations.
-- Keep shared identity, permissions, economy, entitlements and community logic in Chaotic Gaming Core.
-- Keep ATLAS-specific game calls behind a small adapter boundary.
-- Support ATLAS cluster/grid topology explicitly.
-- Prefer server-side functionality; do not require clients to install files unless a feature truly needs it.
+## Not implemented yet
+This is the first monitoring bridge, **not an in-game mod**. It does not yet read game events, modify inventories, deliver purchased items, install mods or execute administrative commands. Those features require verified server-side APIs and isolated compatibility testing for the exact game build.
 
-## Planned first plugins
+## Setup
+1. Register the dedicated game server in Core using the Core server-registration instructions.
+2. Create a service account scoped to that exact server UUID:
+   `npm run service:create -- atlas-adapter --role server_heartbeat --scope-type server --scope-id <SERVER_UUID>`
+3. Copy the generated token once into the local secret environment. Never commit it.
+4. Copy `.env.example` to `.env` and set the Core URL, token, server UUID, query host/port and exact server build.
+5. Run `npm install`, `npm test`, then `npm start`.
 
-1. Server Status & Health
-2. Audit & Activity Log
-3. Announcements & Scheduler
-4. Player Sessions & Statistics
-5. Permissions Bridge
-6. Admin Toolkit
-7. Starter Kits & Welcome Flow
-8. Events & Challenges
-9. Rewards & Entitlements
-10. Tribe / Group Utilities
-11. Teleport & Travel Tools
-12. Claims & Territory Tools
-13. Economy Adapter
-14. Anti-Abuse Rules
-15. Backup & Recovery Coordinator
-
-See the [central plugin catalogue](https://github.com/Chaotic-Minds-Collective/chaotic-gaming-docs/blob/main/plugins/PLUGIN_CATALOG.md).
-
-## Compatibility status
-
-**Not yet validated.** A public listing describes ATLAS Server API 1.71 as a C++ server plugin loader. That is a research lead only. Before implementation depends on it, validate the exact ATLAS server build, loader binary, compiler/toolchain, available headers/SDK, hook lifecycle, and host OS in an isolated test environment.
-
-No DevKit or client asset pipeline is required for the initial server-side plugin roadmap.
-
-## Repository rules
-
-- Do not copy third-party source, assets, or proprietary designs.
-- Each plugin gets its own folder, manifest, tests, docs and version.
-- No plugin gets database credentials. Use a scoped service identity and authenticated Core API.
-- Privileged actions fail closed when authorization cannot be verified.
-- Network failures must not crash the game server.
-- Do not test on a live production server.
-
-## ATLAS integration workspace
-
-The adapter workspace now includes:
-- Compatibility matrix and isolated plugin proof-of-concept acceptance criteria.
-- A minimal plugin milestone that reports startup, version and shutdown only.
-- Explicit validation gates before player, tribe, grid, transfer or reward features are implemented.
-
-No plugin binary has been built or loaded. The ATLAS Server API dependency remains unverified.
+## Security
+- The service token must have only `servers.heartbeat` for one server.
+- Do not expose query ports publicly unless the game requires it.
+- Never place the service token in browser code, game clients or Discord.
+- Use HTTPS for Core API communication in production.
+- Do not point the agent at production until server registration and compatibility testing are approved.
