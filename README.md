@@ -26,7 +26,7 @@ Original, modular server-side plugins for the Chaotic Gaming ATLAS network.
 14. Anti-Abuse Rules
 15. Backup & Recovery Coordinator
 
-See the central catalogue in [chaotic-gaming-docs](https://github.com/Chaotic-Minds-Collective/chaotic-gaming-docs).
+See the [central plugin catalogue](https://github.com/Chaotic-Minds-Collective/chaotic-gaming-docs/blob/main/plugins/PLUGIN_CATALOG.md).
 
 ## Compatibility status
 **Not yet validated.** A public listing describes Atlas Server API 1.71 as a C++ server plugin loader. That is a research lead only. Before implementation depends on it, validate the exact ATLAS server build, loader binary, compiler/toolchain, available headers/SDK, hook lifecycle, and host OS in an isolated test environment.
