@@ -1,42 +1,18 @@
-# Chaotic Gaming — ATLAS Plugins
+# Chaotic Gaming — ATLAS Adapter
 
-Original, modular server-side plugins for the Chaotic Gaming ATLAS network.
+ATLAS integration workspace. Initial target is server-side integration through a verified ATLAS Server API/plugin environment. No DevKit dependency is assumed.
 
-## Goals
-- Replace useful third-party mod functionality with independently maintained implementations.
-- Keep shared identity, permissions, economy, entitlements and community logic in Chaotic Gaming Core.
-- Keep ATLAS-specific game calls behind a small adapter boundary.
-- Support ATLAS cluster/grid topology explicitly.
-- Prefer server-side functionality; do not require clients to install files unless a feature truly needs it.
+## Safety and compatibility
+- Do not install or load experimental plugins on production servers.
+- Validate the exact ATLAS server build and Server API version in an isolated test environment.
+- Third-party Workshop assets and code must be reviewed for license and compatibility; implement independent replacements rather than copying protected source/assets.
+- RCON credentials must remain server-side and must never be committed.
 
-## Planned first plugins
-1. Server Status & Health
-2. Audit & Activity Log
-3. Announcements & Scheduler
-4. Player Sessions & Statistics
-5. Permissions Bridge
-6. Admin Toolkit
-7. Starter Kits & Welcome Flow
-8. Events & Challenges
-9. Rewards & Entitlements
-10. Tribe / Group Utilities
-11. Teleport & Travel Tools
-12. Claims & Territory Tools
-13. Economy Adapter
-14. Anti-Abuse Rules
-15. Backup & Recovery Coordinator
+## Milestones
+1. Document supported server/API versions and reproducible build environment.
+2. Prove a minimal plugin can load, report version, and shut down cleanly on an isolated server.
+3. Add authenticated Core adapter communication.
+4. Add player/session, grid, character and transfer events only after validating available server hooks.
 
-See the [central plugin catalogue](https://github.com/Chaotic-Minds-Collective/chaotic-gaming-docs/blob/main/plugins/PLUGIN_CATALOG.md).
-
-## Compatibility status
-**Not yet validated.** A public listing describes Atlas Server API 1.71 as a C++ server plugin loader. That is a research lead only. Before implementation depends on it, validate the exact ATLAS server build, loader binary, compiler/toolchain, available headers/SDK, hook lifecycle, and host OS in an isolated test environment.
-
-No DevKit or client asset pipeline is required for the initial server-side plugin roadmap.
-
-## Repository rules
-- Do not copy third-party source, assets, or proprietary designs.
-- Each plugin gets its own folder, manifest, tests, docs and version.
-- No plugin gets database credentials. Use a scoped service identity and authenticated Core API.
-- Privileged actions fail closed when authorization cannot be verified.
-- Network failures must not crash the game server.
-- Do not test on a live production server.
+## Status
+Scaffold only. No plugin binary, server installation, or compatibility test has been performed.
