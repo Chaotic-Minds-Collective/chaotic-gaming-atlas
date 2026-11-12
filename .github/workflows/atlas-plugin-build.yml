@@ -18,6 +18,8 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Show CMake version
+        run: cmake --version
       - name: Configure
         run: cmake --preset windows-x64-release
       - name: Build
