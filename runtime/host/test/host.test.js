@@ -80,6 +80,26 @@ test("stops a running plugin and prevents invalid lifecycle transitions", async 
   await assert.rejects(host.stop("com.chaoticgaming.atlas.health"), /Cannot stop plugin/);
 });
 
+test("retries cleanup after a stop hook fails", async () => {
+  const host = new AtlasPluginHost(makeHost());
+  let stopAttempts = 0;
+  host.register(makePlugin({
+    async stop() {
+      stopAttempts += 1;
+      if (stopAttempts === 1) throw new Error("temporary cleanup failure");
+    }
+  }));
+
+  await host.start("com.chaoticgaming.atlas.health");
+  await assert.rejects(host.stop("com.chaoticgaming.atlas.health"), /failed to stop/);
+  assert.equal(host.get("com.chaoticgaming.atlas.health").status, "stop_failed");
+  assert.equal(stopAttempts, 1);
+
+  const stopped = await host.stop("com.chaoticgaming.atlas.health");
+  assert.equal(stopped.status, "stopped");
+  assert.equal(stopAttempts, 2);
+});
+
 test("records startup failures and exposes degraded health checks", async () => {
   const host = new AtlasPluginHost(makeHost());
   host.register(makePlugin({

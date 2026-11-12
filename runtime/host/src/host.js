@@ -151,7 +151,7 @@ export class AtlasPluginHost {
 
   async stop(pluginId) {
     const record = this.#get(pluginId);
-    if (record.status !== "running") {
+    if (!["running", "stop_failed"].includes(record.status)) {
       throw new AtlasHostRuntimeError(`Cannot stop plugin from state: ${record.status}`);
     }
 
@@ -162,7 +162,7 @@ export class AtlasPluginHost {
       record.lastError = null;
       return this.#snapshot(record);
     } catch (error) {
-      record.status = "failed";
+      record.status = "stop_failed";
       record.lastError = error instanceof Error ? error.message : "Plugin stop failed";
       throw new AtlasHostRuntimeError(`Plugin failed to stop: ${pluginId}`, { cause: error });
     }
