@@ -1,15 +1,16 @@
 {
   "id": "com.chaoticminds.atlas.core",
   "name": "Chaotic Gaming Core",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "game": "atlas",
   "apiVersion": "1",
   "dependencies": [],
   "capabilities": [
-    "server.lifecycle"
+    "server.lifecycle",
+    "server.heartbeat"
   ],
   "permissions": [
-    "servers.read"
+    "servers.heartbeat"
   ],
   "compatibility": {
     "gameBuilds": [],
@@ -20,5 +21,34 @@
       "windows"
     ]
   },
-  "configSchema": {}
+  "configSchema": {
+    "type": "object",
+    "required": [
+      "coreApiUrl",
+      "serverId",
+      "serviceToken"
+    ],
+    "properties": {
+      "coreApiUrl": {
+        "type": "string",
+        "format": "uri"
+      },
+      "serverId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "serviceToken": {
+        "type": "string",
+        "minLength": 47
+      },
+      "serverBuild": {
+        "type": "string"
+      },
+      "heartbeatIntervalSeconds": {
+        "type": "integer",
+        "minimum": 30,
+        "maximum": 300
+      }
+    }
+  }
 }

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-project(ChaoticGamingAtlas VERSION 0.1.0 LANGUAGES CXX)
+project(ChaoticGamingAtlas VERSION 0.2.0 LANGUAGES CXX)
 
 if(NOT WIN32)
   message(FATAL_ERROR "The initial ATLAS plugin target is Windows-only.")
@@ -16,6 +16,8 @@ target_compile_definitions(ChaoticGamingCore PRIVATE
   CG_PLUGIN_VERSION="${PROJECT_VERSION}"
   CG_ATLAS_API_VERSION="1.71"
 )
+target_link_libraries(ChaoticGamingCore PRIVATE winhttp)
+
 set_target_properties(ChaoticGamingCore PROPERTIES
   PREFIX ""
   OUTPUT_NAME "ChaoticGamingCore"
