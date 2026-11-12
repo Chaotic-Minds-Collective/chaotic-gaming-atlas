@@ -28,6 +28,8 @@ constexpr char kPluginName[] = "Chaotic Gaming Core";
 constexpr char kAdapterVersion[] = CG_PLUGIN_VERSION;
 
 std::atomic<bool> g_stop{true};
+// Serializes worker ownership and configuration across loader callbacks.
+std::mutex g_lifecycleMutex;
 std::mutex g_waitMutex;
 std::condition_variable g_waitCondition;
 std::thread g_heartbeatThread;
@@ -250,6 +252,11 @@ void heartbeatLoop() noexcept {
 }
 
 void startHeartbeat() {
+    if (g_heartbeatThread.joinable()) {
+        logMessage("[Chaotic Gaming Core] Heartbeat already started; duplicate initialization ignored.\n");
+        return;
+    }
+
     g_coreApiUrl = readEnvironment("CHAOTIC_CORE_API_URL");
     g_serviceToken = readEnvironment("CHAOTIC_CORE_SERVICE_TOKEN");
     g_serverId = readEnvironment("CHAOTIC_CORE_SERVER_ID");
@@ -286,6 +293,7 @@ void startHeartbeat() {
 CG_EXPORT void CG_CALL Plugin_Init() noexcept {
     logLifecycle("Plugin_Init");
     try {
+        std::lock_guard<std::mutex> lifecycleLock(g_lifecycleMutex);
         startHeartbeat();
     } catch (...) {
         logMessage("[Chaotic Gaming Core] Heartbeat initialization failed; plugin remains loaded.\n");
@@ -293,6 +301,7 @@ CG_EXPORT void CG_CALL Plugin_Init() noexcept {
 }
 
 CG_EXPORT void CG_CALL Plugin_Unload() noexcept {
+    std::lock_guard<std::mutex> lifecycleLock(g_lifecycleMutex);
     {
         std::lock_guard<std::mutex> lock(g_waitMutex);
         g_stop.store(true);
