@@ -1,0 +1,27 @@
+name: ATLAS host runtime tests
+
+on:
+  push:
+    paths:
+      - "runtime/host/**"
+      - ".github/workflows/atlas-host-runtime-tests.yml"
+  pull_request:
+    paths:
+      - "runtime/host/**"
+      - ".github/workflows/atlas-host-runtime-tests.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm run check
+        working-directory: runtime/host
+      - run: npm test
+        working-directory: runtime/host
