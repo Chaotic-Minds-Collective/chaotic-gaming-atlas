@@ -52,4 +52,26 @@ The adapter workspace now includes:
 - A minimal plugin milestone that reports startup, version and shutdown only.
 - Explicit validation gates before player, tribe, grid, transfer or reward features are implemented.
 
-No plugin binary has been built or loaded. The ATLAS Server API dependency remains unverified.
+CI builds a Windows x64 plugin artifact, but no binary has been loaded on an actual ATLAS server. The ATLAS Server API dependency remains unverified.
+
+## Core heartbeat integration
+
+The plugin can optionally report a read-only server heartbeat to Chaotic Gaming Core. It does not issue gameplay commands or require direct database access. If the integration is not configured, the plugin remains in lifecycle-only mode.
+
+Register the ATLAS server in Core first, then create a dedicated service identity scoped to that one server:
+
+```bash
+npm run service:create -- atlas-server-main --role server_heartbeat --scope-type server --scope-id <SERVER_UUID>
+```
+
+Configure the ATLAS server process with:
+
+- `CHAOTIC_CORE_API_URL` — HTTPS Core API origin (HTTP is accepted only for localhost development)
+- `CHAOTIC_CORE_SERVICE_TOKEN` — one-time service credential; never commit or share it between servers
+- `CHAOTIC_CORE_SERVER_ID` — the registered Core server UUID
+- `ATLAS_SERVER_BUILD` — optional server build label
+- `HEARTBEAT_INTERVAL_SECONDS` — optional interval from 30 to 300 seconds (default 60)
+
+The service identity needs only the `server_heartbeat` role at that server scope. Network failures are logged and retried; they do not stop the game server. The heartbeat currently reports online state and version metadata; player counts and game-event hooks remain future work.
+
+The HTTP client rejects non-loopback plaintext URLs and disables redirects so credentials and request bodies cannot be forwarded to another host.

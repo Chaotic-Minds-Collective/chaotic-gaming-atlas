@@ -3,6 +3,7 @@
 #include <WinHttp.h>
 #include <atomic>
 #include <cctype>
+#include <cwctype>
 #include <chrono>
 #include <condition_variable>
 #include <cstdio>
@@ -129,6 +130,8 @@ bool sendCoreHeartbeat() {
     URL_COMPONENTS parts{};
     parts.dwStructSize = sizeof(parts);
     parts.dwSchemeLength = static_cast<DWORD>(-1);
+    parts.dwUserNameLength = static_cast<DWORD>(-1);
+    parts.dwPasswordLength = static_cast<DWORD>(-1);
     parts.dwHostNameLength = static_cast<DWORD>(-1);
     parts.dwUrlPathLength = static_cast<DWORD>(-1);
     parts.dwExtraInfoLength = static_cast<DWORD>(-1);
@@ -141,12 +144,22 @@ bool sendCoreHeartbeat() {
     const std::wstring basePath(parts.lpszUrlPath, parts.dwUrlPathLength);
     if ((!secure && parts.nScheme != INTERNET_SCHEME_HTTP) ||
         (!basePath.empty() && basePath != L"/") ||
-        parts.dwExtraInfoLength != 0) {
-        logMessage("[Chaotic Gaming Core] CORE_API_URL must be an HTTP(S) origin without path/query.\n");
+        parts.dwExtraInfoLength != 0 ||
+        parts.dwUserNameLength != 0 ||
+        parts.dwPasswordLength != 0) {
+        logMessage("[Chaotic Gaming Core] CORE_API_URL must be an HTTP(S) origin without credentials, path or query.\n");
         return false;
     }
 
     const std::wstring host(parts.lpszHostName, parts.dwHostNameLength);
+    std::wstring normalizedHost = host;
+    for (wchar_t& ch : normalizedHost) ch = static_cast<wchar_t>(std::towlower(ch));
+    const bool loopbackHost = normalizedHost == L"localhost" ||
+        normalizedHost == L"127.0.0.1" || normalizedHost == L"::1";
+    if (!secure && !loopbackHost) {
+        logMessage("[Chaotic Gaming Core] HTTPS is required except for localhost development.\n");
+        return false;
+    }
     const std::wstring serverId(g_serverId.begin(), g_serverId.end());
     const std::wstring requestPath = L"/integrations/servers/" + serverId + L"/heartbeat";
     const std::wstring headers =
@@ -176,6 +189,14 @@ bool sendCoreHeartbeat() {
         nullptr, WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES, flags));
     if (!request.value) {
         logMessage("[Chaotic Gaming Core] Heartbeat request could not be created.\n");
+        return false;
+    }
+
+    // Never forward the service credential or heartbeat body through a redirect.
+    DWORD disableRedirects = WINHTTP_DISABLE_REDIRECTS;
+    if (!WinHttpSetOption(request.value, WINHTTP_OPTION_DISABLE_FEATURE,
+        &disableRedirects, sizeof(disableRedirects))) {
+        logMessage("[Chaotic Gaming Core] Redirect protection could not be enabled; heartbeat skipped.\n");
         return false;
     }
 
@@ -232,7 +253,6 @@ void startHeartbeat() {
     const std::string serverBuild = readEnvironment("ATLAS_SERVER_BUILD");
     g_serverBuild = serverBuild.empty() ? "unknown" : serverBuild;
 
-    const std::string environment = readEnvironment("NODE_ENV");
     if (g_coreApiUrl.empty() || g_serviceToken.empty() || g_serverId.empty()) {
         logMessage("[Chaotic Gaming Core] Heartbeat not configured; lifecycle-only mode.\n");
         return;
@@ -241,9 +261,8 @@ void startHeartbeat() {
         logMessage("[Chaotic Gaming Core] Invalid server UUID or service token; heartbeat disabled.\n");
         return;
     }
-    if (g_coreApiUrl.rfind("https://", 0) != 0 &&
-        (environment == "production" || g_coreApiUrl.rfind("http://", 0) != 0)) {
-        logMessage("[Chaotic Gaming Core] Production requires an HTTPS Core API URL.\n");
+    if (g_coreApiUrl.rfind("https://", 0) != 0 && g_coreApiUrl.rfind("http://", 0) != 0) {
+        logMessage("[Chaotic Gaming Core] CORE_API_URL must use HTTPS (HTTP is allowed only for localhost).\n");
         return;
     }
 
