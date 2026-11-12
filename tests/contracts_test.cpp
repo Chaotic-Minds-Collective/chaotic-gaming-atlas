@@ -1,7 +1,16 @@
 #include "chaotic/atlas/contracts.hpp"
 
-#include <cassert>
+#include <cstdlib>
+#include <iostream>
 #include <type_traits>
+
+#define ATLAS_CHECK(condition)                            \
+  do {                                                    \
+    if (!(condition)) {                                   \
+      std::cerr << "Check failed: " #condition << '\n';   \
+      return EXIT_FAILURE;                                \
+    }                                                     \
+  } while (false)
 
 int main() {
   using namespace chaotic::atlas;
@@ -18,15 +27,15 @@ int main() {
   status.state = ServerState::online;
   status.online_players = 12;
 
-  assert(status.state == ServerState::online);
-  assert(status.online_players.value() == 12);
+  ATLAS_CHECK(status.state == ServerState::online);
+  ATLAS_CHECK(status.online_players.value() == 12);
 
   EventEnvelope event{};
   event.event_id = "test-event";
   event.kind = EventKind::character_transferred;
   event.player = PlayerIdentity{};
-  assert(event.schema_version == 1);
-  assert(event.player.has_value());
+  ATLAS_CHECK(event.schema_version == 1);
+  ATLAS_CHECK(event.player.has_value());
 
-  return 0;
+  return EXIT_SUCCESS;
 }
