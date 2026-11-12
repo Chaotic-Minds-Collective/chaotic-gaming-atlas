@@ -50,7 +50,13 @@ The host passes a frozen context with host metadata, the plugin ID, and a capabi
 
 `registered -> starting -> running -> stopping -> stopped`
 
-Startup or shutdown exceptions move the plugin to `failed`. A missing capability blocks startup without changing the registered state. Health-check exceptions are reported as degraded health and do not crash the host.
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:a2efa18a71c633a5167b396584b8fe4f3252ec4ace18b1e369ed7d344ab31f11 -->
+
+Startup exceptions move the plugin to terminal `failed`; plugins own cleanup of resources acquired before startup throws. Shutdown exceptions move the plugin to `stop_failed`, from which `stop()` can retry cleanup. Plugins must support retrying partially completed shutdown. Restart is allowed only after successful shutdown. A missing capability blocks startup without changing the registered state. Health-check exceptions are reported as degraded health and do not crash the host. If a lifecycle transition occurs while a health check is pending, its result is discarded and the current lifecycle status is returned with `healthy: false` and no details.
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 ## Development
 

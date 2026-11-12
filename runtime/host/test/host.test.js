@@ -124,3 +124,70 @@ test("does not dynamically discover or execute plugin code", () => {
   assert.equal(host.load, undefined);
   assert.equal(host.discover, undefined);
 });
+
+test("constructor validates and snapshots mutable host metadata", async () => {
+  assert.throws(() => new AtlasPluginHost({ game: "atlas" }), AtlasHostRuntimeError);
+  assert.throws(() => new AtlasPluginHost({ ...makeHost(), game: "other" }), AtlasHostRuntimeError);
+  assert.throws(
+    () => new AtlasPluginHost({ ...makeHost(), capabilities: ["x", "x"] }),
+    AtlasHostRuntimeError
+  );
+  const input = {
+    ...makeHost(),
+    capabilities: ["server.status.read"],
+    loader: { ...makeHost().loader }
+  };
+  const host = new AtlasPluginHost(input);
+  input.capabilities.length = 0;
+  input.loader.verified = true;
+  input.serverBuild = "changed";
+  host.register(makePlugin({
+    async start(context) {
+      assert.equal(context.host.serverBuild, "unverified-target-build");
+      assert.equal(context.host.loader.verified, false);
+      assert.equal(context.hasCapability("server.status.read"), true);
+      assert.throws(() => context.host.capabilities.push("extra"), TypeError);
+      assert.throws(() => { context.host.loader.verified = true; }, TypeError);
+    }
+  }));
+  await host.start("com.chaoticgaming.atlas.health");
+});
+
+for (const rejects of [false, true]) {
+  for (const state of ["stopping", "stopped", "stop_failed", "restarted"]) {
+    test(`pending health ${rejects ? "failure" : "success"} is discarded after ${state}`, async () => {
+      let settleHealth;
+      let finishStop;
+      const host = new AtlasPluginHost(makeHost());
+      host.register(makePlugin({
+        health: () => new Promise((resolve, reject) => {
+          settleHealth = () => rejects ? reject(new Error("stale failure")) : resolve("stale details");
+        }),
+        stop: () => state === "stopping"
+          ? new Promise((resolve) => { finishStop = resolve; })
+          : state === "stop_failed" ? Promise.reject(new Error("cleanup failed")) : undefined
+      }));
+      const id = "com.chaoticgaming.atlas.health";
+      await host.start(id);
+      const pending = host.health(id);
+      const stopping = host.stop(id);
+      if (state === "stop_failed") {
+        await assert.rejects(stopping, /failed to stop/);
+      } else if (state !== "stopping") {
+        await stopping;
+      }
+      if (state === "restarted") await host.start(id);
+      settleHealth();
+      assert.deepEqual(await pending, {
+        pluginId: id,
+        status: state === "restarted" ? "running" : state,
+        healthy: false,
+        details: null
+      });
+      if (finishStop) {
+        finishStop();
+        await stopping;
+      }
+    });
+  }
+}

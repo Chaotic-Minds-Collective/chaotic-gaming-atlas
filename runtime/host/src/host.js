@@ -102,7 +102,7 @@ export class AtlasPluginHost {
     if (!hostContext || hostContext.game !== "atlas") {
       throw new AtlasHostRuntimeError("A valid ATLAS host context is required");
     }
-    this.host = hostContext;
+    this.host = createAtlasHostContext(hostContext);
     this.plugins = new Map();
   }
 
@@ -112,7 +112,7 @@ export class AtlasPluginHost {
       throw new AtlasHostRuntimeError(`Plugin is already registered: ${manifest.id}`);
     }
 
-    const record = { plugin, manifest, status: "registered", lastError: null };
+    const record = { plugin, manifest, status: "registered", lastError: null, lifecycleVersion: 0 };
     this.plugins.set(manifest.id, record);
     return this.#snapshot(record);
   }
@@ -131,6 +131,7 @@ export class AtlasPluginHost {
       );
     }
 
+    record.lifecycleVersion += 1;
     record.status = "starting";
     record.lastError = null;
     try {
@@ -155,6 +156,7 @@ export class AtlasPluginHost {
       throw new AtlasHostRuntimeError(`Cannot stop plugin from state: ${record.status}`);
     }
 
+    record.lifecycleVersion += 1;
     record.status = "stopping";
     try {
       await record.plugin.stop();
@@ -177,10 +179,20 @@ export class AtlasPluginHost {
       return Object.freeze({ pluginId, status: "running", healthy: true, details: null });
     }
 
+    const lifecycleVersion = record.lifecycleVersion;
+    const staleHealth = () => Object.freeze({
+      pluginId, status: record.status, healthy: false, details: null
+    });
     try {
       const details = await record.plugin.health();
+      if (record.status !== "running" || record.lifecycleVersion !== lifecycleVersion) {
+        return staleHealth();
+      }
       return Object.freeze({ pluginId, status: "running", healthy: true, details: details ?? null });
     } catch (error) {
+      if (record.status !== "running" || record.lifecycleVersion !== lifecycleVersion) {
+        return staleHealth();
+      }
       return Object.freeze({
         pluginId,
         status: "degraded",
