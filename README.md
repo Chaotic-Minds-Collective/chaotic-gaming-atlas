@@ -1,6 +1,6 @@
-# Chaotic Minds Gaming — ATLAS Plugins
+# CMG ATLAS Plugin
 
-Original, modular server-side plugins for the Chaotic Gaming ATLAS network.
+Original, modular server-side plugins for the **Chaotic Minds Gaming (CMG)** ATLAS network.
 
 ## Shared architecture
 
