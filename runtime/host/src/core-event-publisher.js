@@ -186,14 +186,19 @@ export function createCoreEventPublisher(options = {}) {
         });
 
         if (response.ok) {
-          try {
-            result = await response.json();
-          } catch (error) {
-            if (timedOut) throw error;
-            // A successful acknowledgement does not require a valid JSON response body.
+          const bodyText = typeof response.text === "function"
+            ? await response.text()
+            : await response.json();
+          if (typeof bodyText === "string") {
+            try {
+              result = JSON.parse(bodyText);
+            } catch {
+              // A successful acknowledgement does not require valid JSON.
+            }
+          } else {
+            result = bodyText;
           }
         } else {
-          await cancelResponseBody(response);
         }
       } catch (error) {
         requestError = error;
