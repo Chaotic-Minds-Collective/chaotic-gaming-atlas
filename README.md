@@ -4,7 +4,7 @@ Original, modular server-side plugins for the **Chaotic Minds Gaming (CMG)** ATL
 
 ## Shared architecture
 
-- [CMG Core](https://github.com/Chaotic-Minds-Collective/chaotic-gaming-core) owns identity, scoped permissions, platform APIs, durable events, commerce, entitlements, and reward jobs.
+- [CMG Core](https://github.com/Chaotic-Minds-Collective/cmg-atlas-core-plugin) owns identity, scoped permissions, platform APIs, durable events, commerce, entitlements, and reward jobs.
 - This repository owns the ATLAS-native adapter boundary and verified game integration contracts.
 - Product modules live in separate repositories and use authenticated Core APIs; they do not connect directly to PostgreSQL.
 
