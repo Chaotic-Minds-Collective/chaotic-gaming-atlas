@@ -199,6 +199,7 @@ export function createCoreEventPublisher(options = {}) {
             result = bodyText;
           }
         } else {
+          await cancelResponseBody(response);
         }
       } catch (error) {
         requestError = error;
