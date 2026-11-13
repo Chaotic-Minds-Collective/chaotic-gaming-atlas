@@ -115,6 +115,30 @@ test("rejects cyclic and repeated object references in payloads", () => {
   }), /cyclic or repeated/);
 });
 
+test("bounds nested array lengths before traversing their elements", () => {
+  const valid = createMockAtlasEventStream()[0];
+  const oversized = new Proxy(new Array(0xFFFFFFFF), {
+    get(target, key, receiver) {
+      if (key !== "length") throw new Error("oversized array was traversed");
+      return Reflect.get(target, key, receiver);
+    }
+  });
+
+  for (const items of [new Array(10001), oversized]) {
+    assert.throws(() => validateMockAtlasEvent({
+      ...valid,
+      payload: { groups: [{ items }] }
+    }), /payload\.groups\[0\]\.items exceeds maximum array length/);
+  }
+
+  const items = new Array(10000);
+  items[9999] = { platformId: "platform-1001" };
+  assert.doesNotThrow(() => validateMockAtlasEvent({ ...valid, payload: { items } }));
+  items[9999] = { platformId: null };
+  assert.throws(() => validateMockAtlasEvent({ ...valid, payload: { items } }),
+    /payload\.items\[9999\]\.platformId/);
+});
+
 test("rejects payload nesting beyond the configured depth limit", () => {
   const valid = createMockAtlasEventStream()[0];
   const payload = {};

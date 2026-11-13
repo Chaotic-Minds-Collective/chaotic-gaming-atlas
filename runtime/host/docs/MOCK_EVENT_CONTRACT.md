@@ -22,6 +22,14 @@ The mock event stream lets Connect, Commerce, Player, Tribes, Sentinel, World, G
 
 The simulator uses strings for provider identifiers and never treats display names as identifiers. A transfer event records source and destination grid IDs. Consumers should deduplicate by source event ID and preserve the full cluster/grid/server scope.
 
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:d1ba47b40ac53b730bcf05d20e7c721aee4424bb5376e2031e35e4302c3fdb64 -->
+
+Payload arrays may have at most 10,000 elements.
+
+<!-- /coderabbit-ai-generated:v1 -->
+
 ## Initial event allowlist
 
 - Player: `player.connected`, `player.disconnected`, `player.died`, `player.killed`

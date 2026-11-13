@@ -57,6 +57,7 @@ function isValidIsoDateTime(value) {
 
 const MAX_PROVIDER_ID_DEPTH = 100;
 const MAX_PROVIDER_ID_NODES = 10000;
+const MAX_PROVIDER_ID_ARRAY_LENGTH = 10000;
 
 function validateProviderIds(value, path = "payload") {
   const stack = [{ value, path, depth: 0 }];
@@ -81,6 +82,9 @@ function validateProviderIds(value, path = "payload") {
     }
 
     if (Array.isArray(nestedValue)) {
+      if (nestedValue.length > MAX_PROVIDER_ID_ARRAY_LENGTH) {
+        throw new TypeError(`${current.path} exceeds maximum array length`);
+      }
       for (let index = nestedValue.length - 1; index >= 0; index -= 1) {
         stack.push({
           value: nestedValue[index],
