@@ -13,14 +13,14 @@ Chaotic Minds Gaming's (CMG) ATLAS work is organized as a coordinated suite of i
 
 | Module | Repository | Domain |
 |---|---|---|
-| CMG Connect | [chaotic-gaming-atlas-connect](https://github.com/Chaotic-Minds-Collective/cmg-atlas-connect-plugin) | Cross-grid chat, announcements, MOTDs, rules, invite links and Discord relay |
-| CMG Commerce | [chaotic-gaming-atlas-commerce](https://github.com/Chaotic-Minds-Collective/cmg-atlas-commerce-plugin) | Shop, wallet presentation, catalogue, rewards, loot boxes and game delivery |
-| CMG Player | [chaotic-gaming-atlas-player](https://github.com/Chaotic-Minds-Collective/cmg-atlas-player-plugin) | Recovery, teleport, commands, tame tracking, progression and ship recovery |
-| CMG Tribes | [chaotic-gaming-atlas-tribes](https://github.com/Chaotic-Minds-Collective/cmg-atlas-tribes-plugin) | Cluster-aware tribe membership, roles, ownership and activity |
-| CMG Sentinel | [chaotic-gaming-atlas-sentinel](https://github.com/Chaotic-Minds-Collective/cmg-atlas-sentinel-plugin) | RCON, admin/mod permissions, health, crash coordination and alerts |
-| CMG World | [chaotic-gaming-atlas-world](https://github.com/Chaotic-Minds-Collective/cmg-atlas-world-plugin) | Safe zones, collision, ownership, limits, loot and spawns |
-| CMG GridForge | [chaotic-gaming-atlas-gridforge](https://github.com/Chaotic-Minds-Collective/cmg-atlas-gridforge-plugin) | Grid JSON authoring, visual maps and resource/creature validation |
-| CMG Adventures | [chaotic-gaming-atlas-adventures](https://github.com/Chaotic-Minds-Collective/cmg-atlas-adventures-plugin) | Quests, challenges, progression, events and rewards |
+| CMG Connect | [cmg-atlas-connect-plugin](https://github.com/Chaotic-Minds-Collective/cmg-atlas-connect-plugin) | Cross-grid chat, announcements, MOTDs, rules, invite links and Discord relay |
+| CMG Commerce | [cmg-atlas-commerce-plugin](https://github.com/Chaotic-Minds-Collective/cmg-atlas-commerce-plugin) | Shop, wallet presentation, catalogue, rewards, loot boxes and game delivery |
+| CMG Player | [cmg-atlas-player-plugin](https://github.com/Chaotic-Minds-Collective/cmg-atlas-player-plugin) | Recovery, teleport, commands, tame tracking, progression and ship recovery |
+| CMG Tribes | [cmg-atlas-tribes-plugin](https://github.com/Chaotic-Minds-Collective/cmg-atlas-tribes-plugin) | Cluster-aware tribe membership, roles, ownership and activity |
+| CMG Sentinel | [cmg-atlas-sentinel-plugin](https://github.com/Chaotic-Minds-Collective/cmg-atlas-sentinel-plugin) | RCON, admin/mod permissions, health, crash coordination and alerts |
+| CMG World | [cmg-atlas-world-plugin](https://github.com/Chaotic-Minds-Collective/cmg-atlas-world-plugin) | Safe zones, collision, ownership, limits, loot and spawns |
+| CMG GridForge | [cmg-atlas-gridforge-plugin](https://github.com/Chaotic-Minds-Collective/cmg-atlas-gridforge-plugin) | Grid JSON authoring, visual maps and resource/creature validation |
+| CMG Adventures | [cmg-atlas-adventures-plugin](https://github.com/Chaotic-Minds-Collective/cmg-atlas-adventures-plugin) | Quests, challenges, progression, events and rewards |
 
 Each module repository contains its own README and `docs/IMPLEMENTATION_PLAN.md`.
 
