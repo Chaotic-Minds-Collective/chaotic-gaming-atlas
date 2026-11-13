@@ -80,6 +80,18 @@ test("posts the normalized Core envelope with scoped Bearer authentication", asy
   assert.equal("schemaVersion" in body, false);
 });
 
+test("preserves an API base path when constructing the Core endpoint", async () => {
+  const [event] = makeEvents();
+  let requestUrl;
+  const publisher = makePublisher({
+    baseUrl: "https://core.example.test/api/v1/",
+    fetchImpl: async (url) => { requestUrl = String(url); return response(202); }
+  });
+  await publisher.publish(event);
+  assert.equal(requestUrl,
+    `https://core.example.test/api/v1/integrations/servers/${serverId}/events`);
+});
+
 test("accepts Core duplicate acknowledgements without changing event identity", async () => {
   const [event] = makeEvents();
   const publisher = makePublisher({

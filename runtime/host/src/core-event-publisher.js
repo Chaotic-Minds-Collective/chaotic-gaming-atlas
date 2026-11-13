@@ -108,10 +108,9 @@ export function createCoreEventPublisher(options = {}) {
     throw new TypeError("retryDelayMs must be an integer between 0 and 5000");
   }
 
-  const endpoint = new URL(
-    `${baseUrl.pathname}/integrations/servers/${serverId}/events`,
-    baseUrl.origin
-  );
+  const endpoint = new URL(baseUrl.origin);
+  const basePath = baseUrl.pathname === "/" ? "" : baseUrl.pathname.replace(/\/+$/, "");
+  endpoint.pathname = `${basePath}/integrations/servers/${serverId}/events`;
 
   async function publish(event) {
     const validated = validateMockAtlasEvent(event);
