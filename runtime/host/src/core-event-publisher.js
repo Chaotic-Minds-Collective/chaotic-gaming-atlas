@@ -2,6 +2,7 @@ import { validateMockAtlasEvent } from "./mock-atlas-events.js";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const SERVICE_CREDENTIAL_PATTERN = /^cg_srv_[A-Za-z0-9_-]{40,}$/;
+// Keep this allowlist synchronized with Core's NORMALIZED_GAME_EVENT_TYPES schema.
 const CORE_EVENT_TYPES = new Set([
   "player.joined",
   "player.left",
@@ -28,6 +29,7 @@ const CORE_EVENT_TYPES = new Set([
   "server.state.changed"
 ]);
 const RETRYABLE_STATUSES = new Set([408, 425, 429, 500, 502, 503, 504]);
+const DEFAULT_REQUEST_TIMEOUT_MS = 10_000;
 
 export class CoreEventPublishError extends Error {
   constructor(message, options = {}) {
@@ -72,6 +74,14 @@ function defaultSleep(milliseconds) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
+async function cancelResponseBody(response) {
+  try {
+    await response?.body?.cancel();
+  } catch {
+    // Releasing an unused error body is best-effort; preserve the HTTP result.
+  }
+}
+
 /**
  * Build an explicitly opted-in publisher for schema-v1 mock events.
  * This sends only to the Core event-ingestion API; it does not call ATLAS,
@@ -94,6 +104,7 @@ export function createCoreEventPublisher(options = {}) {
   const sleep = options.sleep ?? defaultSleep;
   const maxRetries = options.maxRetries ?? 2;
   const retryDelayMs = options.retryDelayMs ?? 100;
+  const requestTimeoutMs = options.requestTimeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS;
 
   if (typeof fetchImpl !== "function") {
     throw new TypeError("fetchImpl must be a function");
@@ -106,6 +117,9 @@ export function createCoreEventPublisher(options = {}) {
   }
   if (!Number.isInteger(retryDelayMs) || retryDelayMs < 0 || retryDelayMs > 5000) {
     throw new TypeError("retryDelayMs must be an integer between 0 and 5000");
+  }
+  if (!Number.isInteger(requestTimeoutMs) || requestTimeoutMs < 1 || requestTimeoutMs > 60_000) {
+    throw new TypeError("requestTimeoutMs must be an integer between 1 and 60000");
   }
 
   const endpoint = new URL(baseUrl.origin);
@@ -144,36 +158,61 @@ export function createCoreEventPublisher(options = {}) {
       payload: validated.payload
     };
 
+    // Snapshot the exact request once so retries cannot reuse an event ID with changed data.
+    const serializedBody = JSON.stringify(body);
+
     for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
+      const controller = new AbortController();
+      let timedOut = false;
       let response;
+      let result = null;
+      let requestError = null;
+      const timeout = setTimeout(() => {
+        timedOut = true;
+        controller.abort(new Error("Core event request timed out"));
+      }, requestTimeoutMs);
+
       try {
         response = await fetchImpl(endpoint, {
           method: "POST",
+          redirect: "error",
+          signal: controller.signal,
           headers: {
             authorization: `Bearer ${credential}`,
             "content-type": "application/json",
             accept: "application/json"
           },
-          body: JSON.stringify(body)
+          body: serializedBody
         });
+
+        if (response.ok) {
+          try {
+            result = await response.json();
+          } catch (error) {
+            if (timedOut) throw error;
+            // A successful acknowledgement does not require a valid JSON response body.
+          }
+        } else {
+          await cancelResponseBody(response);
+        }
       } catch (error) {
+        requestError = error;
+      } finally {
+        clearTimeout(timeout);
+      }
+
+      if (requestError || timedOut) {
         if (attempt < maxRetries) {
           await sleep(retryDelayMs * (2 ** attempt));
           continue;
         }
-        throw new CoreEventPublishError("Core event request failed before receiving a response", {
-          cause: error,
-          eventId: validated.eventId
-        });
+        throw new CoreEventPublishError(
+          timedOut ? "Core event request timed out" : "Core event request failed before receiving a response",
+          { cause: requestError ?? undefined, eventId: validated.eventId }
+        );
       }
 
       if (response.ok) {
-        let result = null;
-        try {
-          result = await response.json();
-        } catch {
-          // A successful acknowledgement does not require a response body.
-        }
         return Object.freeze({
           accepted: true,
           status: response.status,

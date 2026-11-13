@@ -37,7 +37,7 @@ Each module repository contains its own README and `docs/IMPLEMENTATION_PLAN.md`
 ## Current implementation facts and gaps
 
 - Core is a TypeScript/Node.js modular monolith using PostgreSQL and REST APIs.
-- Core's current normalized game-event ingestion supports `player.joined`, `player.left`, `player.chat`, `server.started`, `server.stopped` and `player.died`. Ship sinking, kills, structure destruction, tame, crafting and many other event types require explicit Core schema/API expansion.
+- Core's current normalized game-event ingestion accepts 23 event types: `player.joined`, `player.left`, `player.connected`, `player.disconnected`, `player.chat`, `player.died`, `player.killed`, `character.created`, `character.transferred`, `tribe.created`, `tribe.member.joined`, `tribe.member.left`, `tribe.updated`, `chat.global`, `chat.tribe`, `ship.sunk`, `ship.retrieved`, `structure.destroyed`, `tame.created`, `tame.died`, `server.started`, `server.stopped` and `server.state.changed`. The adapter publisher validates against this Core allowlist and rejects event types outside it before sending.
 - Core has a durable reward claim/acknowledgement workflow. It does not itself grant items in ATLAS; the adapter must perform and confirm the game-side grant.
 - Core's plugin registry records metadata, versions and desired state. It does not download, install, dynamically load, sandbox or execute plugin binaries.
 - The current ATLAS C++ plugin scaffold reports lifecycle and can optionally send a read-only heartbeat. It is not yet a verified game-hook implementation.
