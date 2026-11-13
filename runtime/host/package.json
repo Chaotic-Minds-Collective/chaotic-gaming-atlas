@@ -2,13 +2,14 @@
   "name": "@chaotic-gaming/atlas-host-runtime",
   "version": "0.1.0",
   "private": true,
-  "description": "A host-neutral lifecycle runtime for trusted Chaotic Gaming ATLAS adapters.",
+  "description": "A host-neutral lifecycle runtime and mock event contract for Chaotic Gaming ATLAS adapters.",
   "type": "module",
   "engines": {
     "node": ">=20.9.0"
   },
   "scripts": {
     "test": "node --test",
-    "check": "node --check src/host.js && node --check test/host.test.js"
+    "test:mock": "node --test test/mock-atlas-events.test.js",
+    "check": "node --check src/host.js && node --check src/mock-atlas-events.js && node --check test/host.test.js && node --check test/mock-atlas-events.test.js"
   }
 }
