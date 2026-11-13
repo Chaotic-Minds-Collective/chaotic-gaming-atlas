@@ -20,12 +20,55 @@ const EVENT_TYPES = Object.freeze([
 ]);
 
 const REQUIRED_SCOPE = Object.freeze(["clusterId", "gridId", "serverId"]);
+const ISO_DATE_TIME = /^(\d{4})-(\d{2})-(\d{2})T([01]\d|2[0-3]):([0-5]\d):([0-5]\d)(\.\d+)?(Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$/;
 
 function requireNonEmptyString(value, field) {
   if (typeof value !== "string" || value.trim().length === 0) {
     throw new TypeError(`${field} must be a non-empty string`);
   }
   return value.trim();
+}
+
+function isValidIsoDateTime(value) {
+  if (typeof value !== "string") return false;
+  const match = ISO_DATE_TIME.exec(value);
+  if (!match) return false;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const hour = Number(match[4]);
+  const minute = Number(match[5]);
+  const second = Number(match[6]);
+  const daysInMonth = [
+    31,
+    year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0) ? 29 : 28,
+    31, 30, 31, 30, 31, 31, 30, 31, 30, 31
+  ];
+
+  if (month < 1 || month > 12 || day < 1 || day > daysInMonth[month - 1]) {
+    return false;
+  }
+  if (hour > 23 || minute > 59 || second > 59) return false;
+
+  const timestamp = Date.parse(value);
+  return Number.isFinite(timestamp);
+}
+
+function validateProviderIds(value, path = "payload") {
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => validateProviderIds(item, `${path}[${index}]`));
+    return;
+  }
+  if (!value || typeof value !== "object") return;
+
+  for (const [key, nestedValue] of Object.entries(value)) {
+    const nestedPath = `${path}.${key}`;
+    if (key.endsWith("Id") && nestedValue !== undefined && nestedValue !== null) {
+      requireNonEmptyString(nestedValue, nestedPath);
+    }
+    validateProviderIds(nestedValue, nestedPath);
+  }
 }
 
 export class MockAtlasEventError extends Error {
@@ -61,12 +104,8 @@ export function validateMockAtlasEvent(event) {
     requireNonEmptyString(event.scope[field], `scope.${field}`);
   }
 
-  if (
-    typeof event.occurredAt !== "string" ||
-    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(event.occurredAt) ||
-    Number.isNaN(Date.parse(event.occurredAt))
-  ) {
-    throw new MockAtlasEventError("occurredAt must be a valid ISO date-time string with a timezone");
+  if (!isValidIsoDateTime(event.occurredAt)) {
+    throw new MockAtlasEventError("occurredAt must be a valid ISO 8601 date-time with timezone");
   }
 
   if (event.correlationId !== undefined && event.correlationId !== null) {
@@ -75,17 +114,7 @@ export function validateMockAtlasEvent(event) {
   if (!event.payload || typeof event.payload !== "object" || Array.isArray(event.payload)) {
     throw new MockAtlasEventError("payload must be an object");
   }
-
-  for (const [record, fields, prefix] of [
-    [event.payload, ["tribeId", "ownerTribeId", "tameId", "structureId", "shipId", "sourceGridId", "destinationGridId"], "payload"],
-    [event.payload.player ?? {}, ["platformId", "characterId"], "payload.player"]
-  ]) {
-    for (const field of fields) {
-      if (Object.hasOwn(record, field) && typeof record[field] !== "string") {
-        throw new MockAtlasEventError(`${prefix}.${field} must be a string`);
-      }
-    }
-  }
+  validateProviderIds(event.payload);
 
   return Object.freeze({
     ...event,
@@ -103,8 +132,8 @@ export function createMockAtlasEventStream(options = {}) {
   const gridId = requireNonEmptyString(options.gridId ?? "A1", "gridId");
   const serverId = requireNonEmptyString(options.serverId ?? "cg-test-server-a1", "serverId");
   const occurredAt = options.occurredAt ?? "2026-01-01T00:00:00.000Z";
-  if (typeof occurredAt !== "string" || Number.isNaN(Date.parse(occurredAt))) {
-    throw new MockAtlasEventError("occurredAt must be a valid date-time string");
+  if (!isValidIsoDateTime(occurredAt)) {
+    throw new MockAtlasEventError("occurredAt must be a valid ISO 8601 date-time with timezone");
   }
 
   const scope = Object.freeze({ clusterId, gridId, serverId });
