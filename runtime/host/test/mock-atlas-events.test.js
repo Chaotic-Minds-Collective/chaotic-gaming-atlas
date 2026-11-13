@@ -83,6 +83,25 @@ test("rejects provider IDs that are not non-empty strings, including nested IDs"
   }), /payload\.player\.characterId/);
 });
 
+test("rejects null and undefined provider IDs while allowing omitted IDs and null correlation IDs", () => {
+  const valid = createMockAtlasEventStream()[0];
+  for (const invalidId of [null, undefined]) {
+    assert.throws(() => validateMockAtlasEvent({
+      ...valid,
+      payload: { tribeId: invalidId }
+    }), /payload\.tribeId/);
+    assert.throws(() => validateMockAtlasEvent({
+      ...valid,
+      payload: { players: [{ platformId: invalidId }] }
+    }), /payload\.players\[0\]\.platformId/);
+  }
+  assert.doesNotThrow(() => validateMockAtlasEvent({
+    ...valid,
+    correlationId: null,
+    payload: { player: {} }
+  }));
+});
+
 test("requires an ISO date-time with an explicit timezone", () => {
   const valid = createMockAtlasEventStream()[0];
   for (const occurredAt of [

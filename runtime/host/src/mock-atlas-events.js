@@ -64,7 +64,7 @@ function validateProviderIds(value, path = "payload") {
 
   for (const [key, nestedValue] of Object.entries(value)) {
     const nestedPath = `${path}.${key}`;
-    if (key.endsWith("Id") && nestedValue !== undefined && nestedValue !== null) {
+    if (key.endsWith("Id")) {
       requireNonEmptyString(nestedValue, nestedPath);
     }
     validateProviderIds(nestedValue, nestedPath);
