@@ -61,8 +61,12 @@ export function validateMockAtlasEvent(event) {
     requireNonEmptyString(event.scope[field], `scope.${field}`);
   }
 
-  if (typeof event.occurredAt !== "string" || Number.isNaN(Date.parse(event.occurredAt))) {
-    throw new MockAtlasEventError("occurredAt must be a valid date-time string");
+  if (
+    typeof event.occurredAt !== "string" ||
+    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(event.occurredAt) ||
+    Number.isNaN(Date.parse(event.occurredAt))
+  ) {
+    throw new MockAtlasEventError("occurredAt must be a valid ISO date-time string with a timezone");
   }
 
   if (event.correlationId !== undefined && event.correlationId !== null) {
@@ -70,6 +74,17 @@ export function validateMockAtlasEvent(event) {
   }
   if (!event.payload || typeof event.payload !== "object" || Array.isArray(event.payload)) {
     throw new MockAtlasEventError("payload must be an object");
+  }
+
+  for (const [record, fields, prefix] of [
+    [event.payload, ["tribeId", "ownerTribeId", "tameId", "structureId", "shipId", "sourceGridId", "destinationGridId"], "payload"],
+    [event.payload.player ?? {}, ["platformId", "characterId"], "payload.player"]
+  ]) {
+    for (const field of fields) {
+      if (Object.hasOwn(record, field) && typeof record[field] !== "string") {
+        throw new MockAtlasEventError(`${prefix}.${field} must be a string`);
+      }
+    }
   }
 
   return Object.freeze({
