@@ -1,26 +1,26 @@
-# Chaotic Gaming ATLAS Plugin Suite
+# Chaotic Minds Gaming ATLAS Plugin Suite
 
-Chaotic Gaming's ATLAS work is organized as a coordinated suite of independently versioned modules. The modules are original CG implementations; existing community plugins may inform compatibility research but are not dependencies or copied source.
+Chaotic Minds Gaming's (CMG) ATLAS work is organized as a coordinated suite of independently versioned modules. The modules are original CMG implementations; existing community plugins may inform compatibility research but are not dependencies or copied source.
 
 ## Shared foundations
 
-- [Chaotic Gaming Core](https://github.com/Chaotic-Minds-Collective/chaotic-gaming-core) — identity, authentication, scoped RBAC, server registry, platform APIs, PostgreSQL-backed domain data, event outbox, commerce, entitlements, reward queue and plugin metadata registry.
-- [Chaotic Gaming ATLAS Adapter](https://github.com/Chaotic-Minds-Collective/chaotic-gaming-atlas) — native integration boundary, C++ contracts, plugin scaffold and host-runtime experiments.
-- [ATLAS Admin tools](https://github.com/Chaotic-Minds-Collective/chaotic-atlas-admin) — existing Python backend, Discord bot, frontend and backup scripts; reuse only after security and dependency review.
-- [ATLAS Resource Map](https://github.com/Chaotic-Minds-Collective/ChaoticAtlasResourceMap) — existing icon/data material for GridForge; provenance and license must be checked before redistribution.
+- [CMG Core](https://github.com/Chaotic-Minds-Collective/chaotic-gaming-core) — identity, authentication, scoped RBAC, server registry, platform APIs, PostgreSQL-backed domain data, event outbox, commerce, entitlements, reward queue and plugin metadata registry.
+- [CMG ATLAS Adapter](https://github.com/Chaotic-Minds-Collective/chaotic-gaming-atlas) — native integration boundary, C++ contracts, plugin scaffold and host-runtime experiments.
+- [CMG ATLAS Admin Plugin](https://github.com/Chaotic-Minds-Collective/chaotic-atlas-admin) — existing Python backend, Discord bot, frontend and backup scripts; reuse only after security and dependency review.
+- [CMG ATLAS Resource Map Plugin](https://github.com/Chaotic-Minds-Collective/ChaoticAtlasResourceMap) — existing icon/data material for GridForge; provenance and license must be checked before redistribution.
 
 ## Product modules
 
 | Module | Repository | Domain |
 |---|---|---|
-| CG Connect | [chaotic-gaming-atlas-connect](https://github.com/Chaotic-Minds-Collective/chaotic-gaming-atlas-connect) | Cross-grid chat, announcements, MOTDs, rules, invite links and Discord relay |
-| CG Commerce | [chaotic-gaming-atlas-commerce](https://github.com/Chaotic-Minds-Collective/chaotic-gaming-atlas-commerce) | Shop, wallet presentation, catalogue, rewards, loot boxes and game delivery |
-| CG Player | [chaotic-gaming-atlas-player](https://github.com/Chaotic-Minds-Collective/chaotic-gaming-atlas-player) | Recovery, teleport, commands, tame tracking, progression and ship recovery |
-| CG Tribes | [chaotic-gaming-atlas-tribes](https://github.com/Chaotic-Minds-Collective/chaotic-gaming-atlas-tribes) | Cluster-aware tribe membership, roles, ownership and activity |
-| CG Sentinel | [chaotic-gaming-atlas-sentinel](https://github.com/Chaotic-Minds-Collective/chaotic-gaming-atlas-sentinel) | RCON, admin/mod permissions, health, crash coordination and alerts |
-| CG World | [chaotic-gaming-atlas-world](https://github.com/Chaotic-Minds-Collective/chaotic-gaming-atlas-world) | Safe zones, collision, ownership, limits, loot and spawns |
-| CG GridForge | [chaotic-gaming-atlas-gridforge](https://github.com/Chaotic-Minds-Collective/chaotic-gaming-atlas-gridforge) | Grid JSON authoring, visual maps and resource/creature validation |
-| CG Adventures | [chaotic-gaming-atlas-adventures](https://github.com/Chaotic-Minds-Collective/chaotic-gaming-atlas-adventures) | Quests, challenges, progression, events and rewards |
+| CMG Connect | [chaotic-gaming-atlas-connect](https://github.com/Chaotic-Minds-Collective/chaotic-gaming-atlas-connect) | Cross-grid chat, announcements, MOTDs, rules, invite links and Discord relay |
+| CMG Commerce | [chaotic-gaming-atlas-commerce](https://github.com/Chaotic-Minds-Collective/chaotic-gaming-atlas-commerce) | Shop, wallet presentation, catalogue, rewards, loot boxes and game delivery |
+| CMG Player | [chaotic-gaming-atlas-player](https://github.com/Chaotic-Minds-Collective/chaotic-gaming-atlas-player) | Recovery, teleport, commands, tame tracking, progression and ship recovery |
+| CMG Tribes | [chaotic-gaming-atlas-tribes](https://github.com/Chaotic-Minds-Collective/chaotic-gaming-atlas-tribes) | Cluster-aware tribe membership, roles, ownership and activity |
+| CMG Sentinel | [chaotic-gaming-atlas-sentinel](https://github.com/Chaotic-Minds-Collective/chaotic-gaming-atlas-sentinel) | RCON, admin/mod permissions, health, crash coordination and alerts |
+| CMG World | [chaotic-gaming-atlas-world](https://github.com/Chaotic-Minds-Collective/chaotic-gaming-atlas-world) | Safe zones, collision, ownership, limits, loot and spawns |
+| CMG GridForge | [chaotic-gaming-atlas-gridforge](https://github.com/Chaotic-Minds-Collective/chaotic-gaming-atlas-gridforge) | Grid JSON authoring, visual maps and resource/creature validation |
+| CMG Adventures | [chaotic-gaming-atlas-adventures](https://github.com/Chaotic-Minds-Collective/chaotic-gaming-atlas-adventures) | Quests, challenges, progression, events and rewards |
 
 Each module repository contains its own README and `docs/IMPLEMENTATION_PLAN.md`.
 
@@ -28,7 +28,7 @@ Each module repository contains its own README and `docs/IMPLEMENTATION_PLAN.md`
 
 1. Modules call Core through authenticated APIs. No game plugin or module receives Core database credentials.
 2. The ATLAS adapter is the only boundary for native game callbacks and server operations.
-3. Core is authoritative for CG player identity, permissions, orders, entitlements and durable reward jobs.
+3. Core is authoritative for CMG player identity, permissions, orders, entitlements and durable reward jobs.
 4. ATLAS is authoritative for live in-game state such as current tribe membership, location, inventory and ship state until verified adapter hooks support controlled writes.
 5. All events and state that cross grids retain cluster, grid and server context. Provider IDs are strings; display names are never identifiers.
 6. Event consumers use idempotency keys and correlation IDs. Network failures must not block game-critical threads.
@@ -48,10 +48,10 @@ Each module repository contains its own README and `docs/IMPLEMENTATION_PLAN.md`
 
 1. Verify the ATLAS server/API/loader in an isolated test environment and extend the shared adapter contract.
 2. Close Core gaps for normalized event ingestion, module configuration and reliable cross-grid identity/event correlation.
-3. Implement CG Sentinel's read-only health/event foundation and CG Tribes' read-only synchronization.
-4. Implement CG Connect messaging and CG GridForge's configuration validation.
-5. Implement CG Commerce reward delivery, then CG Player and CG World enforcement.
-6. Implement CG Adventures on top of verified event and reward contracts.
+3. Implement CMG Sentinel's read-only health/event foundation and CMG Tribes' read-only synchronization.
+4. Implement CMG Connect messaging and CMG GridForge's configuration validation.
+5. Implement CMG Commerce reward delivery, then CMG Player and CMG World enforcement.
+6. Implement CMG Adventures on top of verified event and reward contracts.
 7. Run cross-module integration, security and multi-grid failure/recovery tests.
 
 No production server changes, paid services, live payments or public binary releases are authorized by this planning document.
