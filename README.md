@@ -1,4 +1,4 @@
-# Chaotic Gaming — ATLAS Plugins
+# Chaotic Minds Gaming — ATLAS Plugins
 
 Original, modular server-side plugins for the Chaotic Gaming ATLAS network.
 
