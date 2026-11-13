@@ -102,6 +102,30 @@ test("rejects null and undefined provider IDs while allowing omitted IDs and nul
   }));
 });
 
+test("rejects cyclic and repeated object references in payloads", () => {
+  const valid = createMockAtlasEventStream()[0];
+  const cyclic = {};
+  cyclic.self = cyclic;
+  assert.throws(() => validateMockAtlasEvent({ ...valid, payload: cyclic }), /cyclic or repeated/);
+
+  const shared = { nested: true };
+  assert.throws(() => validateMockAtlasEvent({
+    ...valid,
+    payload: { first: shared, second: shared }
+  }), /cyclic or repeated/);
+});
+
+test("rejects payload nesting beyond the configured depth limit", () => {
+  const valid = createMockAtlasEventStream()[0];
+  const payload = {};
+  let current = payload;
+  for (let index = 0; index < 102; index += 1) {
+    current.next = {};
+    current = current.next;
+  }
+  assert.throws(() => validateMockAtlasEvent({ ...valid, payload }), /maximum payload nesting depth/);
+});
+
 test("requires an ISO date-time with an explicit timezone", () => {
   const valid = createMockAtlasEventStream()[0];
   for (const occurredAt of [

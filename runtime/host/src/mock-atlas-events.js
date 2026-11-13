@@ -55,19 +55,51 @@ function isValidIsoDateTime(value) {
   return Number.isFinite(timestamp);
 }
 
-function validateProviderIds(value, path = "payload") {
-  if (Array.isArray(value)) {
-    value.forEach((item, index) => validateProviderIds(item, `${path}[${index}]`));
-    return;
-  }
-  if (!value || typeof value !== "object") return;
+const MAX_PROVIDER_ID_DEPTH = 100;
+const MAX_PROVIDER_ID_NODES = 10000;
 
-  for (const [key, nestedValue] of Object.entries(value)) {
-    const nestedPath = `${path}.${key}`;
-    if (key.endsWith("Id")) {
-      requireNonEmptyString(nestedValue, nestedPath);
+function validateProviderIds(value, path = "payload") {
+  const stack = [{ value, path, depth: 0 }];
+  const visited = new WeakSet();
+  let visitedCount = 0;
+
+  while (stack.length > 0) {
+    const current = stack.pop();
+    const nestedValue = current.value;
+    if (!nestedValue || typeof nestedValue !== "object") continue;
+
+    if (current.depth > MAX_PROVIDER_ID_DEPTH) {
+      throw new TypeError(`${current.path} exceeds maximum payload nesting depth`);
     }
-    validateProviderIds(nestedValue, nestedPath);
+    if (visited.has(nestedValue)) {
+      throw new TypeError(`${current.path} contains a cyclic or repeated object reference`);
+    }
+    visited.add(nestedValue);
+    visitedCount += 1;
+    if (visitedCount > MAX_PROVIDER_ID_NODES) {
+      throw new TypeError("payload exceeds maximum object count");
+    }
+
+    if (Array.isArray(nestedValue)) {
+      for (let index = nestedValue.length - 1; index >= 0; index -= 1) {
+        stack.push({
+          value: nestedValue[index],
+          path: `${current.path}[${index}]`,
+          depth: current.depth + 1
+        });
+      }
+      continue;
+    }
+
+    for (const [key, childValue] of Object.entries(nestedValue)) {
+      const childPath = `${current.path}.${key}`;
+      if (key.endsWith("Id")) {
+        requireNonEmptyString(childValue, childPath);
+      }
+      if (childValue && typeof childValue === "object") {
+        stack.push({ value: childValue, path: childPath, depth: current.depth + 1 });
+      }
+    }
   }
 }
 
