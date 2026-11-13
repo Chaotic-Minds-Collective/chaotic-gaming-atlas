@@ -1,6 +1,6 @@
 # ATLAS Host Runtime Foundation
 
-This package is the first host-neutral lifecycle layer for Chaotic Gaming's original ATLAS integrations.
+This package is the first host-neutral lifecycle layer for Chaotic Minds Gaming's original ATLAS integrations.
 
 ## What it provides
 

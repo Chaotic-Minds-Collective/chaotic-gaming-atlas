@@ -1,8 +1,8 @@
 {
-  "name": "@chaotic-gaming/atlas-host-runtime",
+  "name": "@chaotic-minds-gaming/atlas-host-runtime",
   "version": "0.1.0",
   "private": true,
-  "description": "A host-neutral lifecycle runtime and mock event contract for Chaotic Gaming ATLAS adapters.",
+  "description": "A host-neutral lifecycle runtime and mock event contract for Chaotic Minds Gaming ATLAS adapters.",
   "type": "module",
   "engines": {
     "node": ">=20.9.0"

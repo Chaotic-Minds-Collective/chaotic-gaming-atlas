@@ -1,5 +1,5 @@
 {
-  "FullName": "Chaotic Gaming Core",
+  "FullName": "Chaotic Minds Gaming Core",
   "Description": "ATLAS lifecycle diagnostics and optional server-scoped Core heartbeat. Does not hook game behavior.",
   "Version": "0.2.0",
   "MinApiVersion": 1.71,

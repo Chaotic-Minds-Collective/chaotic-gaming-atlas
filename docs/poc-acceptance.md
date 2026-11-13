@@ -5,7 +5,7 @@
 The native DLL:
 - Exports the existing `Plugin_Init` and `Plugin_Unload` lifecycle symbols.
 - Logs plugin version, candidate API version and optional server build/runtime API metadata.
-- Optionally sends a server-scoped heartbeat to the Chaotic Gaming Core over WinHTTP.
+- Optionally sends a server-scoped heartbeat to the Chaotic Minds Gaming Core over WinHTTP.
 - Stops and joins its heartbeat worker during plugin unload.
 
 It does **not** call ATLAS gameplay APIs, register console commands, access player data, report player counts, deliver items or modify game state.
@@ -25,7 +25,7 @@ The service token is never logged. If the Core URL, token or server ID is missin
 ## Two manifests
 
 - `PluginInfo.json` is the loader-facing manifest for the candidate AtlasApi plugin loader.
-- `manifest.json` is the Chaotic Gaming Core plugin-registry manifest.
+- `manifest.json` is the Chaotic Minds Gaming Core plugin-registry manifest.
 
 They serve different systems and must not be substituted for one another. The Core manifest describes declared capability/permission metadata; the Core registry does not install or execute this DLL.
 
