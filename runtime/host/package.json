@@ -10,6 +10,7 @@
   "scripts": {
     "test": "node --test",
     "test:mock": "node --test test/mock-atlas-events.test.js",
-    "check": "node --check src/host.js && node --check src/mock-atlas-events.js && node --check test/host.test.js && node --check test/mock-atlas-events.test.js"
+    "test:publisher": "node --test test/core-event-publisher.test.js",
+    "check": "node --check src/host.js && node --check src/mock-atlas-events.js && node --check src/core-event-publisher.js && node --check test/host.test.js && node --check test/mock-atlas-events.test.js && node --check test/core-event-publisher.test.js"
   }
 }

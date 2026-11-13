@@ -51,6 +51,18 @@ node --test
 
 Import `createMockAtlasEventStream` from `src/mock-atlas-events.js` in module integration tests. Pass explicit `clusterId`, `gridId`, and `serverId` values to test multi-grid isolation. The returned events and their top-level nested objects are frozen.
 
+## Core event publisher
+
+`createCoreEventPublisher` in `src/core-event-publisher.js` maps schema-v1 mock envelopes to Core's normalized ingestion request:
+
+`POST /integrations/servers/{serverId}/events`
+
+It sends `Authorization: Bearer {service credential}`, the Core game key `atlas`, the stable source `eventId`, event type, timestamp, cluster/grid/server scope, optional correlation ID and payload. The mock-only publisher requires the explicit `allowMockEvents: true` option. It also requires the event cluster and server UUIDs to match the configured publisher scope. This is a test bridge, not a native ATLAS adapter.
+
+Transient network failures and HTTP 408, 425, 429, 500, 502, 503 and 504 responses are retried with a bounded exponential delay. Permanent 4xx responses are not retried. Every retry uses the same event ID so Core's server-scoped idempotency key can acknowledge duplicate deliveries. The publisher does not persist a delivery queue; durable offline delivery remains a later adapter responsibility.
+
+The publisher is inert until a caller explicitly constructs it with a Core URL, a service credential and `allowMockEvents: true`. Never place service credentials in source control, fixtures or logs. Use a server-scoped service credential with only `events.publish` permission.
+
 ## Boundaries
 
 - No mock event grants items, changes player state, executes RCON, restarts a server or changes world configuration.
