@@ -132,6 +132,24 @@ test("accepts Core duplicate acknowledgements without changing event identity", 
   assert.equal(result.eventId, event.eventId);
 });
 
+test("accepts malformed JSON acknowledgements without retrying", async () => {
+  const [event] = makeEvents();
+  for (const makeResponse of [
+    () => new Response("not JSON", { status: 202 }),
+    () => ({ ok: true, status: 202, json: async () => { throw new SyntaxError("invalid JSON"); } })
+  ]) {
+    let calls = 0;
+    const publisher = makePublisher({
+      fetchImpl: async () => { calls += 1; return makeResponse(); }
+    });
+    const result = await publisher.publish(event);
+    assert.equal(result.accepted, true);
+    assert.equal(result.duplicate, false);
+    assert.equal(result.requestId, null);
+    assert.equal(calls, 1);
+  }
+});
+
 test("rejects mismatched server and cluster scope before making a request", async () => {
   const [event] = makeEvents();
   let calls = 0;

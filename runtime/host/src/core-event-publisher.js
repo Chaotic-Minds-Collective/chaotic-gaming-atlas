@@ -186,17 +186,24 @@ export function createCoreEventPublisher(options = {}) {
         });
 
         if (response.ok) {
-          const bodyText = typeof response.text === "function"
-            ? await response.text()
-            : await response.json();
-          if (typeof bodyText === "string") {
-            try {
-              result = JSON.parse(bodyText);
-            } catch {
-              // A successful acknowledgement does not require valid JSON.
+          if (typeof response.text === "function") {
+            const bodyText = await response.text();
+            if (typeof bodyText === "string") {
+              try {
+                result = JSON.parse(bodyText);
+              } catch {
+                // A successful acknowledgement does not require valid JSON.
+              }
+            } else {
+              result = bodyText;
             }
           } else {
-            result = bodyText;
+            try {
+              result = await response.json();
+            } catch (error) {
+              if (!(error instanceof SyntaxError)) throw error;
+              // Custom responses may expose only json(); malformed JSON is optional here too.
+            }
           }
         } else {
           await cancelResponseBody(response);
