@@ -38,6 +38,26 @@ test("freezes the event list and returned event envelopes", () => {
   assert.equal(Object.isFrozen(events[0]), true);
   assert.equal(Object.isFrozen(events[0].scope), true);
   assert.equal(Object.isFrozen(events[0].payload), true);
+  assert.equal(Object.isFrozen(events[0].payload.player), true);
+});
+
+test("deeply snapshots payloads so later source mutation cannot change validated events", () => {
+  const sourcePayload = { player: { platformId: "platform-1001", name: "Original" } };
+  const validated = validateMockAtlasEvent({
+    schemaVersion: 1,
+    eventId: "evt-detached",
+    eventType: "player.connected",
+    occurredAt: "2026-01-01T00:00:00.000Z",
+    scope: { clusterId: "cluster-a", gridId: "A1", serverId: "server-a1" },
+    payload: sourcePayload
+  });
+
+  sourcePayload.player.name = "Changed";
+  sourcePayload.player.extra = true;
+  assert.equal(validated.payload.player.name, "Original");
+  assert.equal("extra" in validated.payload.player, false);
+  assert.equal(Object.isFrozen(validated.payload.player), true);
+  assert.throws(() => { validated.payload.player.name = "Tampered"; }, TypeError);
 });
 
 test("rejects unknown event types and malformed scope", () => {
