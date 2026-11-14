@@ -55,7 +55,13 @@ From `runtime/host`:
 node --test
 ```
 
-Import `createMockAtlasEventStream` from `src/mock-atlas-events.js` in module integration tests. Pass explicit `clusterId`, `gridId`, and `serverId` values to test multi-grid isolation. The returned events and their top-level nested objects are frozen.
+Import `createMockAtlasEventStream` from `src/mock-atlas-events.js` in module integration tests. Pass explicit `clusterId`, `gridId`, and `serverId` values to test multi-grid isolation. <!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:b35f08d8c3cae78301f8343938d582280aa0a14436e86b1186d00244ba114d64 -->
+
+The returned events, payloads, arrays, and nested payload objects are detached snapshots and are deeply frozen. Nested Dates, including Dates from other JavaScript realms, are serialized from their intrinsic timestamp as ISO strings (or `null` for invalid Dates); custom Date conversion methods are ignored. Dates are rejected as top-level payloads.
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 ## Core event publisher
 

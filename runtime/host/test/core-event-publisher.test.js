@@ -84,6 +84,24 @@ test("posts the normalized Core envelope with scoped Bearer authentication", asy
   assert.equal("schemaVersion" in body, false);
 });
 
+test("publishes nested Dates with their original JSON values", async () => {
+  const payload = {
+    nested: { at: new Date("2026-01-02T03:04:05.000Z") },
+    times: [new Date("2026-02-03T04:05:06.000Z"), new Date(NaN)]
+  };
+  const expected = JSON.parse(JSON.stringify(payload));
+  let publishedPayload;
+  const publisher = makePublisher({
+    fetchImpl: async (_url, options) => {
+      publishedPayload = JSON.parse(options.body).payload;
+      return response(202);
+    }
+  });
+
+  await publisher.publish({ ...makeEvents()[0], payload });
+  assert.deepEqual(publishedPayload, expected);
+});
+
 test("publishes every mock fixture event using a Core-supported event name", async () => {
   const events = makeEvents();
   const publishedTypes = [];
@@ -181,7 +199,8 @@ test("does not retry permanent authorization or validation failures", async () =
 });
 
 test("retries transient server responses and preserves the same event ID", async () => {
-  const [event] = makeEvents();
+  const [fixture] = makeEvents();
+  const event = { ...fixture, payload: structuredClone(fixture.payload) };
   const bodies = [];
   const delays = [];
   let calls = 0;
@@ -300,5 +319,8 @@ test("rejects malformed events before attempting delivery", async () => {
     publisher.publish({ ...event, eventType: "player.teleport" }),
     /unsupported eventType/
   );
+  for (const payload of [new Date("2026-01-01T00:00:00.000Z"), new Date(NaN)]) {
+    await assert.rejects(publisher.publish({ ...event, payload }), /payload must be an object/);
+  }
   assert.equal(calls, 0);
 });

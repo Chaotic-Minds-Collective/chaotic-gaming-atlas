@@ -1,3 +1,5 @@
+import { isDate } from "node:util/types";
+
 const EVENT_TYPES = Object.freeze([
   "player.connected",
   "player.disconnected",
@@ -107,6 +109,31 @@ function validateProviderIds(value, path = "payload") {
   }
 }
 
+function cloneAndDeepFreeze(value) {
+  if (isDate(value)) {
+    // Use intrinsic Date operations across realms and ignore caller overrides.
+    return Number.isFinite(Date.prototype.getTime.call(value))
+      ? Date.prototype.toISOString.call(value)
+      : null;
+  }
+  if (Array.isArray(value)) {
+    return Object.freeze(value.map((item) => cloneAndDeepFreeze(item)));
+  }
+  if (value && typeof value === "object") {
+    const copy = {};
+    for (const [key, childValue] of Object.entries(value)) {
+      Object.defineProperty(copy, key, {
+        value: cloneAndDeepFreeze(childValue),
+        enumerable: true,
+        writable: true,
+        configurable: true
+      });
+    }
+    return Object.freeze(copy);
+  }
+  return value;
+}
+
 export class MockAtlasEventError extends Error {
   constructor(message) {
     super(message);
@@ -147,7 +174,8 @@ export function validateMockAtlasEvent(event) {
   if (event.correlationId !== undefined && event.correlationId !== null) {
     requireNonEmptyString(event.correlationId, "correlationId");
   }
-  if (!event.payload || typeof event.payload !== "object" || Array.isArray(event.payload)) {
+  if (!event.payload || typeof event.payload !== "object" || Array.isArray(event.payload)
+    || isDate(event.payload)) {
     throw new MockAtlasEventError("payload must be an object");
   }
   validateProviderIds(event.payload);
@@ -155,7 +183,7 @@ export function validateMockAtlasEvent(event) {
   return Object.freeze({
     ...event,
     scope: Object.freeze({ ...event.scope }),
-    payload: Object.freeze({ ...event.payload })
+    payload: cloneAndDeepFreeze(event.payload)
   });
 }
 

@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { runInNewContext } from "node:vm";
 import {
   createMockAtlasEventStream,
   validateMockAtlasEvent,
@@ -38,6 +39,44 @@ test("freezes the event list and returned event envelopes", () => {
   assert.equal(Object.isFrozen(events[0]), true);
   assert.equal(Object.isFrozen(events[0].scope), true);
   assert.equal(Object.isFrozen(events[0].payload), true);
+  assert.equal(Object.isFrozen(events[0].payload.player), true);
+});
+
+test("deeply snapshots payloads so later source mutation cannot change validated events", () => {
+  const sourcePayload = { player: { platformId: "platform-1001", name: "Original" } };
+  const validated = validateMockAtlasEvent({
+    schemaVersion: 1,
+    eventId: "evt-detached",
+    eventType: "player.connected",
+    occurredAt: "2026-01-01T00:00:00.000Z",
+    scope: { clusterId: "cluster-a", gridId: "A1", serverId: "server-a1" },
+    payload: sourcePayload
+  });
+
+  sourcePayload.player.name = "Changed";
+  sourcePayload.player.extra = true;
+  assert.equal(validated.payload.player.name, "Original");
+  assert.equal("extra" in validated.payload.player, false);
+  assert.equal(Object.isFrozen(validated.payload.player), true);
+  assert.throws(() => { validated.payload.player.name = "Tampered"; }, TypeError);
+});
+
+test("snapshots nested Dates as their immutable JSON values", () => {
+  const objectDate = new Date("2026-01-02T03:04:05.000Z");
+  const arrayDate = new Date("2026-02-03T04:05:06.000Z");
+  const payload = { nested: { at: objectDate }, times: [arrayDate, new Date(NaN)] };
+  const expectedJson = JSON.stringify(payload);
+  const validated = validateMockAtlasEvent({ ...createMockAtlasEventStream()[0], payload });
+
+  assert.equal(JSON.stringify(validated.payload), expectedJson);
+  assert.equal(validated.payload.nested.at, "2026-01-02T03:04:05.000Z");
+  assert.deepEqual(validated.payload.times, ["2026-02-03T04:05:06.000Z", null]);
+  objectDate.setUTCFullYear(2030);
+  arrayDate.setTime(0);
+  assert.equal(JSON.stringify(validated.payload), expectedJson);
+  assert.equal(Object.isFrozen(validated.payload.nested), true);
+  assert.equal(Object.isFrozen(validated.payload.times), true);
+  assert.throws(() => { validated.payload.times[0] = "tampered"; }, TypeError);
 });
 
 test("rejects unknown event types and malformed scope", () => {
@@ -65,6 +104,12 @@ test("rejects invalid schema versions, timestamps and payloads", () => {
   assert.throws(() => validateMockAtlasEvent({ ...valid, schemaVersion: 2 }), /schemaVersion/);
   assert.throws(() => validateMockAtlasEvent({ ...valid, occurredAt: "not-a-date" }), /occurredAt/);
   assert.throws(() => validateMockAtlasEvent({ ...valid, payload: [] }), /payload/);
+  for (const payload of [new Date("2026-01-01T00:00:00.000Z"), new Date(NaN)]) {
+    assert.throws(() => validateMockAtlasEvent({ ...valid, payload }), {
+      name: "MockAtlasEventError",
+      message: "payload must be an object"
+    });
+  }
 });
 
 test("rejects provider IDs that are not non-empty strings, including nested IDs", () => {
@@ -183,4 +228,60 @@ test("exports the event type allowlist as immutable contract metadata", () => {
   assert.ok(MOCK_ATLAS_EVENT_TYPES.includes("ship.sunk"));
   assert.ok(MOCK_ATLAS_EVENT_TYPES.includes("structure.destroyed"));
   assert.equal(Object.isFrozen(MOCK_ATLAS_EVENT_TYPES), true);
+});
+
+
+test("preserves own __proto__ keys without changing snapshot prototypes", () => {
+  const payload = JSON.parse('{"__proto__":{"marker":"original"},"nested":{"__proto__":{"value":1}}}');
+  const validated = validateMockAtlasEvent({ ...createMockAtlasEventStream()[0], payload });
+
+  assert.equal(Object.getPrototypeOf(validated.payload), Object.prototype);
+  assert.equal(Object.getPrototypeOf(validated.payload.nested), Object.prototype);
+  assert.equal(Object.hasOwn(validated.payload, "__proto__"), true);
+  assert.equal(Object.hasOwn(validated.payload.nested, "__proto__"), true);
+  assert.equal(JSON.stringify(validated.payload), JSON.stringify(payload));
+  payload.__proto__.marker = "changed";
+  assert.equal(validated.payload.__proto__.marker, "original");
+  assert.equal(Object.isFrozen(validated.payload.__proto__), true);
+  assert.equal(Object.isFrozen(validated.payload.nested.__proto__), true);
+  assert.throws(() => { validated.payload.__proto__.marker = "tampered"; }, TypeError);
+});
+
+
+test("snapshots cross-realm Dates and rejects them as top-level payloads", () => {
+  const valid = createMockAtlasEventStream()[0];
+  const foreignDate = runInNewContext('new Date("2026-01-02T03:04:05.000Z")');
+  const foreignInvalid = runInNewContext("new Date(NaN)");
+  const payload = { at: foreignDate, times: [foreignInvalid] };
+  const validated = validateMockAtlasEvent({ ...valid, payload });
+
+  assert.equal(validated.payload.at, "2026-01-02T03:04:05.000Z");
+  assert.deepEqual(validated.payload.times, [null]);
+  foreignDate.setTime(0);
+  assert.equal(validated.payload.at, "2026-01-02T03:04:05.000Z");
+  for (const date of [foreignDate, foreignInvalid]) {
+    assert.throws(() => validateMockAtlasEvent({ ...valid, payload: date }), {
+      name: "MockAtlasEventError",
+      message: "payload must be an object"
+    });
+  }
+});
+
+test("Date overrides cannot inject mutable values into snapshots", () => {
+  const date = new Date("2026-01-02T03:04:05.000Z");
+  const injected = { nested: { value: "original" } };
+  Object.defineProperties(date, {
+    toISOString: { value: () => injected },
+    [Symbol.toPrimitive]: { value: () => 0 }
+  });
+  const validated = validateMockAtlasEvent({
+    ...createMockAtlasEventStream()[0],
+    payload: { at: date, times: [date.toISOString()] }
+  });
+
+  injected.nested.value = "changed";
+  date.setTime(0);
+  assert.equal(validated.payload.at, "2026-01-02T03:04:05.000Z");
+  assert.equal(validated.payload.times[0].nested.value, "original");
+  assert.equal(Object.isFrozen(validated.payload.times[0].nested), true);
 });
