@@ -55,7 +55,7 @@ From `runtime/host`:
 node --test
 ```
 
-Import `createMockAtlasEventStream` from `src/mock-atlas-events.js` in module integration tests. Pass explicit `clusterId`, `gridId`, and `serverId` values to test multi-grid isolation. The returned events and their top-level nested objects are frozen.
+Import `createMockAtlasEventStream` from `src/mock-atlas-events.js` in module integration tests. Pass explicit `clusterId`, `gridId`, and `serverId` values to test multi-grid isolation. The returned events, payloads, arrays, and nested payload objects are detached snapshots and are deeply frozen.
 
 ## Core event publisher
 
