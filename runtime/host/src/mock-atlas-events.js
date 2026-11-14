@@ -114,7 +114,12 @@ function cloneAndDeepFreeze(value) {
   if (value && typeof value === "object") {
     const copy = {};
     for (const [key, childValue] of Object.entries(value)) {
-      copy[key] = cloneAndDeepFreeze(childValue);
+      Object.defineProperty(copy, key, {
+        value: cloneAndDeepFreeze(childValue),
+        enumerable: true,
+        writable: true,
+        configurable: true
+      });
     }
     return Object.freeze(copy);
   }

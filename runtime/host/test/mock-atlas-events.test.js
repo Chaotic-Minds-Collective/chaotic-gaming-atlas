@@ -204,3 +204,20 @@ test("exports the event type allowlist as immutable contract metadata", () => {
   assert.ok(MOCK_ATLAS_EVENT_TYPES.includes("structure.destroyed"));
   assert.equal(Object.isFrozen(MOCK_ATLAS_EVENT_TYPES), true);
 });
+
+
+test("preserves own __proto__ keys without changing snapshot prototypes", () => {
+  const payload = JSON.parse('{"__proto__":{"marker":"original"},"nested":{"__proto__":{"value":1}}}');
+  const validated = validateMockAtlasEvent({ ...createMockAtlasEventStream()[0], payload });
+
+  assert.equal(Object.getPrototypeOf(validated.payload), Object.prototype);
+  assert.equal(Object.getPrototypeOf(validated.payload.nested), Object.prototype);
+  assert.equal(Object.hasOwn(validated.payload, "__proto__"), true);
+  assert.equal(Object.hasOwn(validated.payload.nested, "__proto__"), true);
+  assert.equal(JSON.stringify(validated.payload), JSON.stringify(payload));
+  payload.__proto__.marker = "changed";
+  assert.equal(validated.payload.__proto__.marker, "original");
+  assert.equal(Object.isFrozen(validated.payload.__proto__), true);
+  assert.equal(Object.isFrozen(validated.payload.nested.__proto__), true);
+  assert.throws(() => { validated.payload.__proto__.marker = "tampered"; }, TypeError);
+});
