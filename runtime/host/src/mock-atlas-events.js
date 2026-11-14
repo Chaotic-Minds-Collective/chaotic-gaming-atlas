@@ -108,6 +108,10 @@ function validateProviderIds(value, path = "payload") {
 }
 
 function cloneAndDeepFreeze(value) {
+  if (value instanceof Date) {
+    // Preserve the JSON value without retaining a mutable Date in the snapshot.
+    return Date.prototype.toJSON.call(value);
+  }
   if (Array.isArray(value)) {
     return Object.freeze(value.map((item) => cloneAndDeepFreeze(item)));
   }

@@ -60,6 +60,24 @@ test("deeply snapshots payloads so later source mutation cannot change validated
   assert.throws(() => { validated.payload.player.name = "Tampered"; }, TypeError);
 });
 
+test("snapshots nested Dates as their immutable JSON values", () => {
+  const objectDate = new Date("2026-01-02T03:04:05.000Z");
+  const arrayDate = new Date("2026-02-03T04:05:06.000Z");
+  const payload = { nested: { at: objectDate }, times: [arrayDate, new Date(NaN)] };
+  const expectedJson = JSON.stringify(payload);
+  const validated = validateMockAtlasEvent({ ...createMockAtlasEventStream()[0], payload });
+
+  assert.equal(JSON.stringify(validated.payload), expectedJson);
+  assert.equal(validated.payload.nested.at, "2026-01-02T03:04:05.000Z");
+  assert.deepEqual(validated.payload.times, ["2026-02-03T04:05:06.000Z", null]);
+  objectDate.setUTCFullYear(2030);
+  arrayDate.setTime(0);
+  assert.equal(JSON.stringify(validated.payload), expectedJson);
+  assert.equal(Object.isFrozen(validated.payload.nested), true);
+  assert.equal(Object.isFrozen(validated.payload.times), true);
+  assert.throws(() => { validated.payload.times[0] = "tampered"; }, TypeError);
+});
+
 test("rejects unknown event types and malformed scope", () => {
   assert.throws(() => validateMockAtlasEvent({
     schemaVersion: 1,

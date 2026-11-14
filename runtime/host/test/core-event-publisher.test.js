@@ -84,6 +84,24 @@ test("posts the normalized Core envelope with scoped Bearer authentication", asy
   assert.equal("schemaVersion" in body, false);
 });
 
+test("publishes nested Dates with their original JSON values", async () => {
+  const payload = {
+    nested: { at: new Date("2026-01-02T03:04:05.000Z") },
+    times: [new Date("2026-02-03T04:05:06.000Z"), new Date(NaN)]
+  };
+  const expected = JSON.parse(JSON.stringify(payload));
+  let publishedPayload;
+  const publisher = makePublisher({
+    fetchImpl: async (_url, options) => {
+      publishedPayload = JSON.parse(options.body).payload;
+      return response(202);
+    }
+  });
+
+  await publisher.publish({ ...makeEvents()[0], payload });
+  assert.deepEqual(publishedPayload, expected);
+});
+
 test("publishes every mock fixture event using a Core-supported event name", async () => {
   const events = makeEvents();
   const publishedTypes = [];
