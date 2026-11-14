@@ -11,9 +11,17 @@ function makeHost(overrides = {}) {
     serverBuild: "unverified-target-build",
     platform: "win32",
     runtimeVersion: "0.1.0",
-    capabilities: ["server.status.read", "server.events.read"],
+    capabilities: [],
     loader: { name: "unverified-loader", version: "unknown", verified: false },
     ...overrides
+  });
+}
+
+function makeVerifiedHost(overrides = {}) {
+  return makeHost({
+    ...overrides,
+    capabilities: overrides.capabilities ?? ["server.status.read", "server.events.read"],
+    loader: { name: "verified-loader", version: "1.0.0", verified: true, ...overrides.loader }
   });
 }
 
@@ -38,14 +46,18 @@ test("creates an immutable ATLAS host context without assuming loader compatibil
   assert.equal(Object.isFrozen(host.capabilities), true);
 });
 
-test("rejects invalid host identity and duplicate capabilities", () => {
+test("rejects invalid host identity, duplicate capabilities, and capabilities from an unverified loader", () => {
   assert.throws(() => makeHost({ platform: "macos" }), AtlasHostRuntimeError);
-  assert.throws(() => makeHost({ capabilities: ["x", "x"] }), AtlasHostRuntimeError);
+  assert.throws(() => makeVerifiedHost({ capabilities: ["x", "x"] }), AtlasHostRuntimeError);
   assert.throws(() => makeHost({ loader: { name: "loader", version: "1" } }), AtlasHostRuntimeError);
+  assert.throws(
+    () => makeHost({ capabilities: ["server.status.read"] }),
+    /Unverified ATLAS loaders cannot report/
+  );
 });
 
-test("registers and starts a plugin only when required capabilities exist", async () => {
-  const host = new AtlasPluginHost(makeHost());
+test("registers and starts a plugin only when required capabilities exist on a verified loader", async () => {
+  const host = new AtlasPluginHost(makeVerifiedHost());
   host.register(makePlugin());
   const running = await host.start("com.chaoticgaming.atlas.health");
   assert.equal(running.status, "running");
@@ -53,7 +65,7 @@ test("registers and starts a plugin only when required capabilities exist", asyn
 });
 
 test("does not start a plugin when a required capability is missing", async () => {
-  const host = new AtlasPluginHost(makeHost({ capabilities: [] }));
+  const host = new AtlasPluginHost(makeVerifiedHost({ capabilities: [] }));
   host.register(makePlugin());
   await assert.rejects(
     host.start("com.chaoticgaming.atlas.health"),
@@ -62,8 +74,20 @@ test("does not start a plugin when a required capability is missing", async () =
   assert.equal(host.get("com.chaoticgaming.atlas.health").status, "registered");
 });
 
+test("does not start a capability-bearing plugin when the loader is unverified", async () => {
+  const host = new AtlasPluginHost(makeVerifiedHost());
+  let starts = 0;
+  host.register(makePlugin({ async start() { starts += 1; } }));
+  await assert.rejects(
+    host.start("com.chaoticgaming.atlas.health"),
+    /requires unavailable capabilities/
+  );
+  assert.equal(starts, 0);
+  assert.equal(host.get("com.chaoticgaming.atlas.health").status, "registered");
+});
+
 test("rejects duplicate plugin IDs and invalid plugin contracts", () => {
-  const host = new AtlasPluginHost(makeHost());
+  const host = new AtlasPluginHost(makeVerifiedHost());
   host.register(makePlugin());
   assert.throws(() => host.register(makePlugin()), /already registered/);
   assert.throws(
@@ -73,7 +97,7 @@ test("rejects duplicate plugin IDs and invalid plugin contracts", () => {
 });
 
 test("stops a running plugin and prevents invalid lifecycle transitions", async () => {
-  const host = new AtlasPluginHost(makeHost());
+  const host = new AtlasPluginHost(makeVerifiedHost());
   host.register(makePlugin());
   await host.start("com.chaoticgaming.atlas.health");
   assert.equal((await host.stop("com.chaoticgaming.atlas.health")).status, "stopped");
@@ -81,7 +105,7 @@ test("stops a running plugin and prevents invalid lifecycle transitions", async 
 });
 
 test("retries cleanup after a stop hook fails", async () => {
-  const host = new AtlasPluginHost(makeHost());
+  const host = new AtlasPluginHost(makeVerifiedHost());
   let stopAttempts = 0;
   host.register(makePlugin({
     async stop() {
@@ -101,14 +125,14 @@ test("retries cleanup after a stop hook fails", async () => {
 });
 
 test("records startup failures and exposes degraded health checks", async () => {
-  const host = new AtlasPluginHost(makeHost());
+  const host = new AtlasPluginHost(makeVerifiedHost());
   host.register(makePlugin({
     async start() { throw new Error("startup exploded"); }
   }));
   await assert.rejects(host.start("com.chaoticgaming.atlas.health"), /failed to start/);
   assert.equal(host.get("com.chaoticgaming.atlas.health").status, "failed");
 
-  const second = new AtlasPluginHost(makeHost());
+  const second = new AtlasPluginHost(makeVerifiedHost());
   second.register(makePlugin({
     async health() { throw new Error("health unavailable"); }
   }));
@@ -119,7 +143,7 @@ test("records startup failures and exposes degraded health checks", async () => 
 });
 
 test("does not dynamically discover or execute plugin code", () => {
-  const host = new AtlasPluginHost(makeHost());
+  const host = new AtlasPluginHost(makeVerifiedHost());
   assert.equal(typeof host.register, "function");
   assert.equal(host.load, undefined);
   assert.equal(host.discover, undefined);
@@ -134,7 +158,7 @@ test("constructor validates and snapshots mutable host metadata", async () => {
   );
   const input = {
     ...makeHost(),
-    capabilities: ["server.status.read"],
+    capabilities: [],
     loader: { ...makeHost().loader }
   };
   const host = new AtlasPluginHost(input);
@@ -142,10 +166,15 @@ test("constructor validates and snapshots mutable host metadata", async () => {
   input.loader.verified = true;
   input.serverBuild = "changed";
   host.register(makePlugin({
+    manifest: {
+      id: "com.chaoticgaming.atlas.health",
+      version: "0.1.0",
+      requiredCapabilities: []
+    },
     async start(context) {
       assert.equal(context.host.serverBuild, "unverified-target-build");
       assert.equal(context.host.loader.verified, false);
-      assert.equal(context.hasCapability("server.status.read"), true);
+      assert.equal(context.hasCapability("server.status.read"), false);
       assert.throws(() => context.host.capabilities.push("extra"), TypeError);
       assert.throws(() => { context.host.loader.verified = true; }, TypeError);
     }
@@ -158,7 +187,7 @@ for (const rejects of [false, true]) {
     test(`pending health ${rejects ? "failure" : "success"} is discarded after ${state}`, async () => {
       let settleHealth;
       let finishStop;
-      const host = new AtlasPluginHost(makeHost());
+      const host = new AtlasPluginHost(makeVerifiedHost());
       host.register(makePlugin({
         health: () => new Promise((resolve, reject) => {
           settleHealth = () => rejects ? reject(new Error("stale failure")) : resolve("stale details");
