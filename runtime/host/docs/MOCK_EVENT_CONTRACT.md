@@ -41,6 +41,12 @@ Payload arrays may have at most 10,000 elements.
 
 This is a product-facing normalized event vocabulary for mock-driven development. Mapping each event to a real game callback, its payload fields, timing and reliability remains a server/SDK verification task.
 
+## Verified capability boundary
+
+The host context may advertise native ATLAS capabilities only when `loader.verified` is true. An unverified loader must provide an empty capability list; the runtime rejects contradictory context instead of trusting declared capability names. Plugins that require native capabilities therefore cannot start against an unverified loader. Host-neutral plugins may still run with no native capabilities.
+
+A verified flag is a caller-supplied assertion from an isolated compatibility-validation process, not something this host runtime proves. Do not set it to true until the exact server build, loader, SDK/toolchain, callback lifecycle and platform have been independently tested.
+
 ## Use
 
 From `runtime/host`:
