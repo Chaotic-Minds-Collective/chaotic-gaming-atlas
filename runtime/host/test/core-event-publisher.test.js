@@ -181,7 +181,8 @@ test("does not retry permanent authorization or validation failures", async () =
 });
 
 test("retries transient server responses and preserves the same event ID", async () => {
-  const [event] = makeEvents();
+  const [fixture] = makeEvents();
+  const event = { ...fixture, payload: structuredClone(fixture.payload) };
   const bodies = [];
   const delays = [];
   let calls = 0;
