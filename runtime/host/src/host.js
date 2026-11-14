@@ -47,12 +47,19 @@ export function createAtlasHostContext(input) {
     throw new AtlasHostRuntimeError("loader.verified must be a boolean");
   }
 
+  const capabilities = uniqueStrings(input.capabilities, "capabilities");
+  if (!input.loader.verified && capabilities.length > 0) {
+    throw new AtlasHostRuntimeError(
+      "Unverified ATLAS loaders cannot report available native capabilities"
+    );
+  }
+
   return Object.freeze({
     game: "atlas",
     serverBuild: requireString(input.serverBuild, "serverBuild"),
     platform,
     runtimeVersion: requireString(input.runtimeVersion, "runtimeVersion"),
-    capabilities: uniqueStrings(input.capabilities, "capabilities"),
+    capabilities,
     loader: Object.freeze({
       name: requireString(input.loader.name, "loader.name"),
       version: requireString(input.loader.version, "loader.version"),
