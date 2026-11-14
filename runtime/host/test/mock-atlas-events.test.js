@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { runInNewContext } from "node:vm";
 import {
   createMockAtlasEventStream,
   validateMockAtlasEvent,
@@ -244,4 +245,43 @@ test("preserves own __proto__ keys without changing snapshot prototypes", () => 
   assert.equal(Object.isFrozen(validated.payload.__proto__), true);
   assert.equal(Object.isFrozen(validated.payload.nested.__proto__), true);
   assert.throws(() => { validated.payload.__proto__.marker = "tampered"; }, TypeError);
+});
+
+
+test("snapshots cross-realm Dates and rejects them as top-level payloads", () => {
+  const valid = createMockAtlasEventStream()[0];
+  const foreignDate = runInNewContext('new Date("2026-01-02T03:04:05.000Z")');
+  const foreignInvalid = runInNewContext("new Date(NaN)");
+  const payload = { at: foreignDate, times: [foreignInvalid] };
+  const validated = validateMockAtlasEvent({ ...valid, payload });
+
+  assert.equal(validated.payload.at, "2026-01-02T03:04:05.000Z");
+  assert.deepEqual(validated.payload.times, [null]);
+  foreignDate.setTime(0);
+  assert.equal(validated.payload.at, "2026-01-02T03:04:05.000Z");
+  for (const date of [foreignDate, foreignInvalid]) {
+    assert.throws(() => validateMockAtlasEvent({ ...valid, payload: date }), {
+      name: "MockAtlasEventError",
+      message: "payload must be an object"
+    });
+  }
+});
+
+test("Date overrides cannot inject mutable values into snapshots", () => {
+  const date = new Date("2026-01-02T03:04:05.000Z");
+  const injected = { nested: { value: "original" } };
+  Object.defineProperties(date, {
+    toISOString: { value: () => injected },
+    [Symbol.toPrimitive]: { value: () => 0 }
+  });
+  const validated = validateMockAtlasEvent({
+    ...createMockAtlasEventStream()[0],
+    payload: { at: date, times: [date.toISOString()] }
+  });
+
+  injected.nested.value = "changed";
+  date.setTime(0);
+  assert.equal(validated.payload.at, "2026-01-02T03:04:05.000Z");
+  assert.equal(validated.payload.times[0].nested.value, "original");
+  assert.equal(Object.isFrozen(validated.payload.times[0].nested), true);
 });

@@ -1,3 +1,5 @@
+import { isDate } from "node:util/types";
+
 const EVENT_TYPES = Object.freeze([
   "player.connected",
   "player.disconnected",
@@ -108,9 +110,11 @@ function validateProviderIds(value, path = "payload") {
 }
 
 function cloneAndDeepFreeze(value) {
-  if (value instanceof Date) {
-    // Preserve the JSON value without retaining a mutable Date in the snapshot.
-    return Date.prototype.toJSON.call(value);
+  if (isDate(value)) {
+    // Use intrinsic Date operations across realms and ignore caller overrides.
+    return Number.isFinite(Date.prototype.getTime.call(value))
+      ? Date.prototype.toISOString.call(value)
+      : null;
   }
   if (Array.isArray(value)) {
     return Object.freeze(value.map((item) => cloneAndDeepFreeze(item)));
@@ -171,7 +175,7 @@ export function validateMockAtlasEvent(event) {
     requireNonEmptyString(event.correlationId, "correlationId");
   }
   if (!event.payload || typeof event.payload !== "object" || Array.isArray(event.payload)
-    || event.payload instanceof Date) {
+    || isDate(event.payload)) {
     throw new MockAtlasEventError("payload must be an object");
   }
   validateProviderIds(event.payload);
