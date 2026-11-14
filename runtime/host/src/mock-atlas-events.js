@@ -107,6 +107,20 @@ function validateProviderIds(value, path = "payload") {
   }
 }
 
+function cloneAndDeepFreeze(value) {
+  if (Array.isArray(value)) {
+    return Object.freeze(value.map((item) => cloneAndDeepFreeze(item)));
+  }
+  if (value && typeof value === "object") {
+    const copy = {};
+    for (const [key, childValue] of Object.entries(value)) {
+      copy[key] = cloneAndDeepFreeze(childValue);
+    }
+    return Object.freeze(copy);
+  }
+  return value;
+}
+
 export class MockAtlasEventError extends Error {
   constructor(message) {
     super(message);
@@ -155,7 +169,7 @@ export function validateMockAtlasEvent(event) {
   return Object.freeze({
     ...event,
     scope: Object.freeze({ ...event.scope }),
-    payload: Object.freeze({ ...event.payload })
+    payload: cloneAndDeepFreeze(event.payload)
   });
 }
 
