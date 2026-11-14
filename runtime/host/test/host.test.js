@@ -75,7 +75,7 @@ test("does not start a plugin when a required capability is missing", async () =
 });
 
 test("does not start a capability-bearing plugin when the loader is unverified", async () => {
-  const host = new AtlasPluginHost(makeVerifiedHost());
+  const host = new AtlasPluginHost(makeHost());
   let starts = 0;
   host.register(makePlugin({ async start() { starts += 1; } }));
   await assert.rejects(
