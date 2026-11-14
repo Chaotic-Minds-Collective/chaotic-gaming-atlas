@@ -103,6 +103,12 @@ test("rejects invalid schema versions, timestamps and payloads", () => {
   assert.throws(() => validateMockAtlasEvent({ ...valid, schemaVersion: 2 }), /schemaVersion/);
   assert.throws(() => validateMockAtlasEvent({ ...valid, occurredAt: "not-a-date" }), /occurredAt/);
   assert.throws(() => validateMockAtlasEvent({ ...valid, payload: [] }), /payload/);
+  for (const payload of [new Date("2026-01-01T00:00:00.000Z"), new Date(NaN)]) {
+    assert.throws(() => validateMockAtlasEvent({ ...valid, payload }), {
+      name: "MockAtlasEventError",
+      message: "payload must be an object"
+    });
+  }
 });
 
 test("rejects provider IDs that are not non-empty strings, including nested IDs", () => {

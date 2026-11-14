@@ -170,7 +170,8 @@ export function validateMockAtlasEvent(event) {
   if (event.correlationId !== undefined && event.correlationId !== null) {
     requireNonEmptyString(event.correlationId, "correlationId");
   }
-  if (!event.payload || typeof event.payload !== "object" || Array.isArray(event.payload)) {
+  if (!event.payload || typeof event.payload !== "object" || Array.isArray(event.payload)
+    || event.payload instanceof Date) {
     throw new MockAtlasEventError("payload must be an object");
   }
   validateProviderIds(event.payload);

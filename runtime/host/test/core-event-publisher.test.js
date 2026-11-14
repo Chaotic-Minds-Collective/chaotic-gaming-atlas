@@ -319,5 +319,8 @@ test("rejects malformed events before attempting delivery", async () => {
     publisher.publish({ ...event, eventType: "player.teleport" }),
     /unsupported eventType/
   );
+  for (const payload of [new Date("2026-01-01T00:00:00.000Z"), new Date(NaN)]) {
+    await assert.rejects(publisher.publish({ ...event, payload }), /payload must be an object/);
+  }
   assert.equal(calls, 0);
 });
